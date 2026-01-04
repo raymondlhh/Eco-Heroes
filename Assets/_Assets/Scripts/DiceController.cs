@@ -14,24 +14,17 @@ public class DiceController : MonoBehaviour
     [SerializeField] private float checkInterval = 0.1f;
     [SerializeField] private float velocityThreshold = 0.1f;
     [SerializeField] private float angularVelocityThreshold = 0.1f;
+    [SerializeField] private float stabilityWaitTime = 0.2f; // Wait for dice to stabilize
+    
+    [Header("Face Mapping")]
+    [Tooltip("Face values for: Up, Down, Forward, Back, Right, Left. Adjust if detection is incorrect.")]
+    [SerializeField] private int[] faceValues = new int[] { 1, 6, 2, 5, 3, 4 };
     
     private Rigidbody rb;
     private bool isRolling = false;
     private int currentValue = 0;
     private float lastCheckTime = 0f;
-    
-    // Dice face directions (standard dice orientation)
-    // These vectors represent the "up" direction for each face value
-    private Vector3[] faceDirections = new Vector3[]
-    {
-        Vector3.zero,           // 0 - unused
-        -Vector3.up,            // 1 - bottom face
-        Vector3.forward,        // 2 - front face
-        -Vector3.right,        // 3 - left face
-        Vector3.right,         // 4 - right face
-        -Vector3.forward,      // 5 - back face
-        Vector3.up             // 6 - top face
-    };
+    private float stableTime = 0f;
     
     public int CurrentValue => currentValue;
     public bool IsRolling => isRolling;
@@ -60,6 +53,7 @@ public class DiceController : MonoBehaviour
         
         isRolling = true;
         currentValue = 0;
+        stableTime = 0f;
         
         // Reset position and rotation to initial state
         transform.localPosition = Vector3.zero;
@@ -102,9 +96,22 @@ public class DiceController : MonoBehaviour
                 if (rb.linearVelocity.magnitude < velocityThreshold && 
                     rb.angularVelocity.magnitude < angularVelocityThreshold)
                 {
-                    // Dice has stopped, detect the value
-                    DetectDiceValue();
-                    isRolling = false;
+                    // Count how long the dice has been stable
+                    stableTime += checkInterval;
+                    
+                    // Only detect after dice has been stable for a duration
+                    if (stableTime >= stabilityWaitTime)
+                    {
+                        // Dice has stopped, detect the value
+                        DetectDiceValue();
+                        isRolling = false;
+                        stableTime = 0f;
+                    }
+                }
+                else
+                {
+                    // Dice is still moving, reset stability timer
+                    stableTime = 0f;
                 }
             }
         }
@@ -112,64 +119,55 @@ public class DiceController : MonoBehaviour
     
     private void DetectDiceValue()
     {
-        // Method 1: Raycast from center to each face direction
-        // The face pointing up (or closest to up) determines the value
-        float maxDot = -1f;
-        int detectedValue = 1;
-        
-        for (int i = 1; i < faceDirections.Length; i++)
+        // Get all 6 face directions in world space
+        Vector3[] faceDirections = new Vector3[]
         {
-            // Transform the face direction to world space
-            Vector3 worldDirection = transform.TransformDirection(faceDirections[i]);
-            
-            // Check how aligned this direction is with world up
-            float dot = Vector3.Dot(worldDirection, Vector3.up);
-            
-            if (dot > maxDot)
-            {
-                maxDot = dot;
-                detectedValue = i;
-            }
-        }
-        
-        currentValue = detectedValue;
-        
-        // Alternative method: Use raycasting to check which face is pointing up
-        // This is more reliable for complex dice models
-        DetectValueByRaycast();
-    }
-    
-    private void DetectValueByRaycast()
-    {
-        // Cast rays from the dice center in multiple directions
-        // The face with the highest dot product to Vector3.up wins
-        float maxDot = -1f;
-        int bestValue = 1;
-        
-        // Check all 6 faces
-        Vector3[] directions = new Vector3[]
-        {
-            transform.up,           // Top (6)
-            -transform.up,          // Bottom (1)
-            transform.forward,      // Front (2)
-            -transform.forward,     // Back (5)
-            transform.right,       // Right (4)
-            -transform.right       // Left (3)
+            transform.up,           // Index 0: Up
+            -transform.up,          // Index 1: Down
+            transform.forward,      // Index 2: Forward
+            -transform.forward,     // Index 3: Back
+            transform.right,       // Index 4: Right
+            -transform.right       // Index 5: Left
         };
         
-        int[] values = new int[] { 6, 1, 2, 5, 4, 3 };
+        // Detect the BOTTOM face (pointing downward) instead of top face
+        // This is more reliable because the bottom face is always in contact with the ground
+        float maxDot = -1f;
+        int bestIndex = 1; // Default to Down
         
-        for (int i = 0; i < directions.Length; i++)
+        for (int i = 0; i < faceDirections.Length; i++)
         {
-            float dot = Vector3.Dot(directions[i], Vector3.up);
+            // Check alignment with world DOWN (negative Y)
+            float dot = Vector3.Dot(faceDirections[i].normalized, Vector3.down);
+            
             if (dot > maxDot)
             {
                 maxDot = dot;
-                bestValue = values[i];
+                bestIndex = i;
             }
         }
         
-        currentValue = bestValue;
+        // Map the detected face index to the actual dice value
+        // Since we detected the bottom face, we need to get the opposite face value
+        // On standard dice, opposite faces sum to 7
+        if (bestIndex >= 0 && bestIndex < faceValues.Length)
+        {
+            int bottomFaceValue = faceValues[bestIndex];
+            // Calculate the top face value (opposite face)
+            // If bottom is 1, top is 6; if bottom is 6, top is 1, etc.
+            currentValue = 7 - bottomFaceValue;
+        }
+        else
+        {
+            currentValue = 1; // Fallback
+        }
+        
+        // Debug output
+        string[] directionNames = { "Up", "Down", "Forward", "Back", "Right", "Left" };
+        int bottomValue = (bestIndex >= 0 && bestIndex < faceValues.Length) ? faceValues[bestIndex] : 0;
+        Debug.Log($"[Dice {gameObject.name}] Detected Top: {currentValue} | " +
+                  $"Bottom Face: {directionNames[bestIndex]} (Value: {bottomValue}) | " +
+                  $"Dot: {maxDot:F2}");
     }
     
     public void ResetDice()
