@@ -21,6 +21,10 @@ public class GameManager : MonoBehaviour
     public int DiceSum => diceSum;
     public bool IsRolling => isRolling;
     
+    // Display current dice values
+    public int FirstDiceValue => firstDice != null ? firstDice.CurrentValue : 0;
+    public int SecondDiceValue => secondDice != null ? secondDice.CurrentValue : 0;
+    
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -213,7 +217,35 @@ public class GameManager : MonoBehaviour
         if (firstDice != null && secondDice != null)
         {
             diceSum = firstDice.CurrentValue + secondDice.CurrentValue;
-            Debug.Log($"Dice Roll Complete! First Dice: {firstDice.CurrentValue}, Second Dice: {secondDice.CurrentValue}, Sum: {diceSum}");
+            
+            // Display the dice sum prominently
+            string message = $"=== DICE ROLL RESULT ===\n" +
+                           $"First Dice: {firstDice.CurrentValue}\n" +
+                           $"Second Dice: {secondDice.CurrentValue}\n" +
+                           $"TOTAL SUM: {diceSum}\n" +
+                           $"========================";
+            
+            Debug.Log(message);
+            DisplayDiceSum();
+        }
+    }
+    
+    /// <summary>
+    /// Displays the current dice sum. Can be called anytime to check the current values.
+    /// </summary>
+    public void DisplayDiceSum()
+    {
+        if (firstDice != null && secondDice != null)
+        {
+            string status = $"Current Dice Status:\n" +
+                          $"First Dice Value: {firstDice.CurrentValue}\n" +
+                          $"Second Dice Value: {secondDice.CurrentValue}\n" +
+                          $"Total Sum: {diceSum}";
+            Debug.Log(status);
+        }
+        else
+        {
+            Debug.LogWarning("Dice not found! Cannot display dice sum.");
         }
     }
     
