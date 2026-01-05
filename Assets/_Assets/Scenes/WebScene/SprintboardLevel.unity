@@ -1827,7 +1827,7 @@ MonoBehaviour:
   lineHeightOffset: 0.1
   graphWidth: 17
   graphHeight: 4
-  gameTime: 30
+  gameTime: 300
   initialMoney: 2000
   baseStockValue: 100
   volatility: 3

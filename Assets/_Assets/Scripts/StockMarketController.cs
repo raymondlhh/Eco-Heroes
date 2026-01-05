@@ -38,6 +38,11 @@ public class StockMarketController : MonoBehaviour
     private float remainingTime;
     private bool isGameOver = false;
     
+    // Stable graph scaling
+    private float graphMinValue;
+    private float graphMaxValue;
+    private bool graphRangeInitialized = false;
+    
     // Line Renderer for drawing the stock line
     private LineRenderer stockLineRenderer;
     private GameObject lineObject;
@@ -186,17 +191,38 @@ public class StockMarketController : MonoBehaviour
         if (stockLineRenderer == null || planeTransform == null || stockHistory.Count < 2)
             return;
         
-        // Calculate min and max values for scaling
-        float minValue = Mathf.Min(stockHistory.ToArray());
-        float maxValue = Mathf.Max(stockHistory.ToArray());
-        float range = maxValue - minValue;
+        // Get current min/max from history
+        float[] historyArray = stockHistory.ToArray();
+        float histMin = Mathf.Min(historyArray);
+        float histMax = Mathf.Max(historyArray);
+        
+        // Initialize graph range on first draw
+        if (!graphRangeInitialized)
+        {
+            float center = (histMin + histMax) * 0.5f;
+            float initialRange = Mathf.Max(histMax - histMin, baseStockValue * 0.2f); // At least 20% of base value
+            
+            graphMinValue = center - initialRange * 0.5f;
+            graphMaxValue = center + initialRange * 0.5f;
+            graphRangeInitialized = true;
+        }
+        
+        // Expand range only if new values go outside current range (don't shrink)
+        if (histMin < graphMinValue)
+        {
+            graphMinValue = histMin;
+        }
+        if (histMax > graphMaxValue)
+        {
+            graphMaxValue = histMax;
+        }
+        
+        float range = graphMaxValue - graphMinValue;
         
         // Prevent division by zero
         if (range < 0.1f)
         {
             range = 0.1f;
-            minValue = currentStockValue - 0.05f;
-            maxValue = currentStockValue + 0.05f;
         }
         
         // Set number of points
@@ -212,8 +238,8 @@ public class StockMarketController : MonoBehaviour
         
         for (int i = 0; i < pointCount; i++)
         {
-            // Normalize value (0 to 1)
-            float normalizedValue = (stockHistory[i] - minValue) / range;
+            // Normalize value (0 to 1) using stable range
+            float normalizedValue = (stockHistory[i] - graphMinValue) / range;
             
             // Convert to local coordinates relative to plane
             // X: spread across graph width (left to right)
