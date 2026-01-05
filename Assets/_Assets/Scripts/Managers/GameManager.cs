@@ -23,14 +23,18 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform cardsStartPath;
     [SerializeField] private Transform cardsEndPath;
     
+    [Header("UI References")]
+    [SerializeField] private GameObject miniGamesUI;
+    
     private int diceSum = 0;
     private bool isRolling = false;
     private float lastCheckTime = 0f;
     private bool isCardAnimating = false;
+    private KeyboardManager keyboardManager;
     
     public int DiceSum => diceSum;
     public bool IsRolling => isRolling;
-    public bool CanRollDice => !isRolling && !isCardAnimating && (player == null || !player.IsMoving);
+    public bool CanRollDice => !isRolling && !isCardAnimating && (player == null || !player.IsMoving) && !IsMiniGameActive();
     
     // Display current dice values
     public int FirstDiceValue => firstDice != null ? firstDice.CurrentValue : 0;
@@ -66,11 +70,57 @@ public class GameManager : MonoBehaviour
             FindCardSpawnPoints();
         }
         
+        // Find KeyboardManager to check MiniGameStockMarket status
+        keyboardManager = FindAnyObjectByType<KeyboardManager>();
+        
+        // Find and hide MiniGamesUI at start
+        if (miniGamesUI == null)
+        {
+            GameObject miniGamesUIObj = GameObject.Find("MiniGamesUI");
+            if (miniGamesUIObj != null)
+            {
+                miniGamesUI = miniGamesUIObj;
+            }
+        }
+        
+        // Hide MiniGamesUI at start
+        if (miniGamesUI != null)
+        {
+            miniGamesUI.SetActive(false);
+        }
+        
         // Subscribe to player movement complete event
         if (player != null)
         {
             player.OnMovementComplete += OnPlayerMovementComplete;
         }
+    }
+    
+    private bool IsMiniGameActive()
+    {
+        // Check if MiniGamesUI is active (use activeInHierarchy to account for parent inactive state)
+        if (miniGamesUI != null && miniGamesUI.activeInHierarchy)
+        {
+            Debug.Log("Dice blocked: MiniGamesUI is active");
+            return true;
+        }
+        
+        // Check if MiniGameStockMarket is active via KeyboardManager
+        if (keyboardManager != null && keyboardManager.IsMiniGameActive)
+        {
+            Debug.Log("Dice blocked: MiniGameStockMarket is active");
+            return true;
+        }
+        
+        // Fallback: Try to find MiniGameStockMarket GameObject directly
+        GameObject miniGame = GameObject.Find("MiniGameStockMarket");
+        if (miniGame != null && miniGame.activeInHierarchy)
+        {
+            Debug.Log("Dice blocked: MiniGameStockMarket found and active");
+            return true;
+        }
+        
+        return false;
     }
 
     // Update is called once per frame
@@ -78,9 +128,26 @@ public class GameManager : MonoBehaviour
     {
         // Handle input for web (mouse click) and mobile (touch)
         // Only allow rolling if dice are not rolling, player is not moving, and card is not animating
-        if (CanRollDice && (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)))
+        if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
-            RollDice();
+            if (!CanRollDice)
+            {
+                // Debug why dice cannot be rolled
+                if (isRolling)
+                    Debug.Log("Cannot roll dice: Dice are currently rolling");
+                else if (isCardAnimating)
+                    Debug.Log("Cannot roll dice: Card is animating");
+                else if (player != null && player.IsMoving)
+                    Debug.Log("Cannot roll dice: Player is moving");
+                else if (IsMiniGameActive())
+                    Debug.Log("Cannot roll dice: Mini game is active");
+                else
+                    Debug.Log("Cannot roll dice: Unknown reason");
+            }
+            else if (CanRollDice)
+            {
+                RollDice();
+            }
         }
         
         // Check if dice have finished rolling
