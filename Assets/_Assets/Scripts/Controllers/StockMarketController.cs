@@ -211,10 +211,12 @@ public class StockMarketController : MonoBehaviour
         
         // Determine current trend direction (compare last two points)
         int pointCount = stockHistory.Count;
-        bool isCurrentlyGoingUp = stockHistory[pointCount - 1] > stockHistory[pointCount - 2];
+        // Check if stock value increased (last > previous means stock went up)
+        bool stockIncreased = stockHistory[pointCount - 1] > stockHistory[pointCount - 2];
         
         // Only change color when direction actually changes (prevents flickering)
-        Color newColor = isCurrentlyGoingUp ? upColor : downColor;
+        // FIXED: When stock value increases (going up) -> green (upColor), when decreases (going down) -> red (downColor)
+        Color newColor = stockIncreased ? upColor : downColor;
         
         // Update color only if it's different from current
         if (newColor != currentLineColor)
