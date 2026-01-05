@@ -1772,7 +1772,7 @@ GameObject:
   - component: {fileID: 1715873375}
   - component: {fileID: 1715873376}
   m_Layer: 5
-  m_Name: MiniGame01
+  m_Name: MiniGameStockMarket
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1830,8 +1830,7 @@ MonoBehaviour:
   volatility: 3
   updateInterval: 0.1
   maxDataPoints: 50
-  upColor: {r: 0, g: 1, b: 0, a: 1}
-  downColor: {r: 1, g: 0, b: 0, a: 1}
+  lineColor: {r: 0, g: 1, b: 0, a: 1}
   lineWidth: 0.05
 --- !u!1 &1828320985
 GameObject:

@@ -23,13 +23,11 @@ public class StockMarketController1 : MonoBehaviour
     [SerializeField] private float volatility = 3f;
     [SerializeField] private float updateInterval = 0.1f;
     [SerializeField] private int maxDataPoints = 50;
-    [SerializeField] private Color upColor = Color.green;
-    [SerializeField] private Color downColor = Color.red;
+    [SerializeField] private Color lineColor = Color.green;
     [SerializeField] private float lineWidth = 0.02f;
     
     private float currentMoney;
     private float currentStockValue;
-    private float previousStockValue;
     private List<float> stockHistory = new List<float>();
     private float lastUpdateTime = 0f;
     
@@ -42,7 +40,6 @@ public class StockMarketController1 : MonoBehaviour
         // Initialize values
         currentMoney = initialMoney;
         currentStockValue = baseStockValue;
-        previousStockValue = baseStockValue;
         
         // Find buttons if not assigned
         if (buyButton == null)
@@ -112,8 +109,8 @@ public class StockMarketController1 : MonoBehaviour
         // Add LineRenderer component
         stockLineRenderer = lineObject.AddComponent<LineRenderer>();
         stockLineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        stockLineRenderer.startColor = upColor;
-        stockLineRenderer.endColor = upColor;
+        stockLineRenderer.startColor = lineColor;
+        stockLineRenderer.endColor = lineColor;
         stockLineRenderer.startWidth = lineWidth;
         stockLineRenderer.endWidth = lineWidth;
         stockLineRenderer.useWorldSpace = true; // Use world space for 3D
@@ -121,9 +118,6 @@ public class StockMarketController1 : MonoBehaviour
     
     private void UpdateStockValue()
     {
-        // Store previous value before updating
-        previousStockValue = currentStockValue;
-        
         // Random movement for stock price (random walk)
         float change = Random.Range(-volatility, volatility);
         currentStockValue += change;
@@ -192,54 +186,6 @@ public class StockMarketController1 : MonoBehaviour
         
         // Update line renderer
         stockLineRenderer.SetPositions(positions);
-        
-        // Create gradient with colors based on each segment's direction
-        UpdateLineGradient();
-    }
-    
-    private void UpdateLineGradient()
-    {
-        if (stockLineRenderer == null || stockHistory.Count < 2)
-            return;
-        
-        // Create a gradient for the line
-        Gradient gradient = new Gradient();
-        List<GradientColorKey> colorKeys = new List<GradientColorKey>();
-        List<GradientAlphaKey> alphaKeys = new List<GradientAlphaKey>();
-        
-        int pointCount = stockHistory.Count;
-        
-        // Add color keys at segment boundaries for better per-segment coloring
-        for (int i = 0; i < pointCount - 1; i++)
-        {
-            // Determine direction of this segment (from point i to point i+1)
-            bool goingUp = stockHistory[i + 1] > stockHistory[i];
-            Color segmentColor = goingUp ? upColor : downColor;
-            
-            // Add color key at the start of the segment
-            float startTime = i / (float)(pointCount - 1);
-            colorKeys.Add(new GradientColorKey(segmentColor, startTime));
-            alphaKeys.Add(new GradientAlphaKey(1f, startTime));
-            
-            // Add color key just before the end of the segment (to prevent blending)
-            float endTime = (i + 0.99f) / (float)(pointCount - 1);
-            colorKeys.Add(new GradientColorKey(segmentColor, endTime));
-            alphaKeys.Add(new GradientAlphaKey(1f, endTime));
-        }
-        
-        // Add final point
-        if (pointCount > 1)
-        {
-            float finalTime = 1f;
-            bool finalGoingUp = stockHistory[pointCount - 1] > stockHistory[pointCount - 2];
-            Color finalColor = finalGoingUp ? upColor : downColor;
-            colorKeys.Add(new GradientColorKey(finalColor, finalTime));
-            alphaKeys.Add(new GradientAlphaKey(1f, finalTime));
-        }
-        
-        // Set the gradient
-        gradient.SetKeys(colorKeys.ToArray(), alphaKeys.ToArray());
-        stockLineRenderer.colorGradient = gradient;
     }
     
     private void OnBuyClicked()
