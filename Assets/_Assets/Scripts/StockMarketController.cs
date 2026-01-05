@@ -16,6 +16,7 @@ public class StockMarketController : MonoBehaviour
     [Header("2D Panel Reference")]
     [SerializeField] private RectTransform graphPanel;
     [SerializeField] private float padding = 10f; // Padding from panel edges
+    [SerializeField] private Material lineMaterial; // Material for the line (assign in Inspector)
     
     [Header("Game Timer Settings")]
     [SerializeField] private float gameTime = 30f; // 30 seconds
@@ -163,11 +164,45 @@ public class StockMarketController : MonoBehaviour
         
         // Add UILineRenderer component (custom UI component)
         uiLineRenderer = lineObject.AddComponent<UILineRenderer>();
-        uiLineRenderer.color = lineColor;
+        
+        // Assign material if provided, otherwise use default
+        if (lineMaterial != null)
+        {
+            uiLineRenderer.material = lineMaterial;
+        }
+        else
+        {
+            // Try to get default material from Canvas
+            Material defaultMat = Canvas.GetDefaultCanvasMaterial();
+            if (defaultMat != null)
+            {
+                uiLineRenderer.material = defaultMat;
+            }
+            else
+            {
+                // Fallback: create a simple material with UI/Default shader
+                uiLineRenderer.material = new Material(Shader.Find("UI/Default"));
+            }
+        }
+        
+        // Ensure color has full alpha
+        Color finalColor = lineColor;
+        finalColor.a = 1f; // Ensure fully opaque
+        uiLineRenderer.color = finalColor;
+        
         uiLineRenderer.LineWidth = lineWidth;
         uiLineRenderer.raycastTarget = false; // Don't block UI interactions
         
-        Debug.Log($"Line renderer setup complete. Color: {lineColor}, Width: {lineWidth}, Panel: {graphPanel.name}");
+        // Ensure the component is enabled and visible
+        uiLineRenderer.enabled = true;
+        
+        // Set the layer to UI layer (layer 5)
+        lineObject.layer = 5;
+        
+        // Force all updates
+        uiLineRenderer.SetAllDirty();
+        
+        Debug.Log($"Line renderer setup complete. Color: {finalColor}, Width: {lineWidth}, Panel: {graphPanel.name}, Material: {uiLineRenderer.material?.name ?? "None"}");
     }
     
     private void UpdateStockValue()
@@ -240,6 +275,13 @@ public class StockMarketController : MonoBehaviour
         float panelWidth = graphPanel.rect.width - (padding * 2f);
         float panelHeight = graphPanel.rect.height - (padding * 2f);
         
+        // Ensure we have valid dimensions
+        if (panelWidth <= 0 || panelHeight <= 0)
+        {
+            Debug.LogWarning($"Invalid panel dimensions: {panelWidth}x{panelHeight}");
+            return;
+        }
+        
         // Create points for the line in UI space
         List<Vector2> points = new List<Vector2>();
         
@@ -249,19 +291,17 @@ public class StockMarketController : MonoBehaviour
             // Normalize value (0 to 1) using stable range
             float normalizedValue = (stockHistory[i] - graphMinValue) / range;
             
-            // Convert to UI coordinates
+            // Clamp normalized value to 0-1 range
+            normalizedValue = Mathf.Clamp01(normalizedValue);
+            
+            // Convert to UI coordinates (local space relative to RectTransform)
             // X: spread across panel width (left to right, with padding)
             // Y: map to panel height (bottom to top, with padding)
-            float x = (i / (float)(pointCount - 1)) * panelWidth - panelWidth * 0.5f;
-            float y = normalizedValue * panelHeight - panelHeight * 0.5f;
+            // Use 0-based coordinates (0,0 is bottom-left of RectTransform)
+            float x = padding + (i / (float)(pointCount - 1)) * panelWidth;
+            float y = padding + normalizedValue * panelHeight;
             
             points.Add(new Vector2(x, y));
-        }
-        
-        // Debug: Log first and last point positions
-        if (points.Count > 0)
-        {
-            Debug.Log($"Drawing line with {points.Count} points. First: {points[0]}, Last: {points[points.Count - 1]}, Panel size: {panelWidth}x{panelHeight}");
         }
         
         // Update UI line renderer
@@ -351,7 +391,7 @@ public class UILineRenderer : Graphic
         set
         {
             points = value;
-            SetVerticesDirty();
+            SetAllDirty(); // Force complete update
         }
     }
     
@@ -361,7 +401,7 @@ public class UILineRenderer : Graphic
         set
         {
             lineWidth = value;
-            SetVerticesDirty();
+            SetAllDirty(); // Force complete update
         }
     }
     
@@ -424,24 +464,38 @@ public class UILineRenderer : Graphic
             segmentsAdded++;
         }
         
-        if (segmentsAdded == 0)
+        if (segmentsAdded == 0 && points.Length >= 2)
         {
             Debug.LogWarning($"UILineRenderer: No segments were added! Points: {points.Length}");
-        }
-        else
-        {
-            Debug.Log($"UILineRenderer: Added {segmentsAdded} segments from {points.Length} points");
         }
     }
     
     protected override void Awake()
     {
         base.Awake();
-        // Ensure we have a default material
+        // Ensure we have a default material for UI rendering
+        // Graphic components need a material to render
         if (material == null)
         {
-            material = defaultMaterial;
+            // Try to get default material from Canvas
+            Material defaultMat = Canvas.GetDefaultCanvasMaterial();
+            if (defaultMat != null)
+            {
+                material = defaultMat;
+            }
+            else
+            {
+                // Fallback: create a simple material with UI/Default shader
+                material = new Material(Shader.Find("UI/Default"));
+            }
         }
+    }
+    
+    protected override void OnEnable()
+    {
+        base.OnEnable();
+        // Force complete update when enabled
+        SetAllDirty();
     }
     
     public void SetPoints(Vector2[] newPoints)
@@ -453,6 +507,5 @@ public class UILineRenderer : Graphic
         }
         
         Points = newPoints;
-        Debug.Log($"UILineRenderer: SetPoints called with {newPoints.Length} points");
     }
 }
