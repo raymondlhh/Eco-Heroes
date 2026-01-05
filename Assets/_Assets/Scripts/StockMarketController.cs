@@ -13,11 +13,9 @@ public class StockMarketController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timeText;
     [SerializeField] private GameObject gameOverPanel;
     
-    [Header("3D Plane Reference")]
-    [SerializeField] private Transform planeTransform;
-    [SerializeField] private float lineHeightOffset = 0.1f; // Height above the plane
-    [SerializeField] private float graphWidth = 10f; // Width of the graph on the plane
-    [SerializeField] private float graphHeight = 5f; // Height of the graph on the plane
+    [Header("2D Panel Reference")]
+    [SerializeField] private RectTransform graphPanel;
+    [SerializeField] private float padding = 10f; // Padding from panel edges
     
     [Header("Game Timer Settings")]
     [SerializeField] private float gameTime = 30f; // 30 seconds
@@ -29,7 +27,7 @@ public class StockMarketController : MonoBehaviour
     [SerializeField] private float updateInterval = 0.1f;
     [SerializeField] private int maxDataPoints = 50;
     [SerializeField] private Color lineColor = Color.green;
-    [SerializeField] private float lineWidth = 0.02f;
+    [SerializeField] private float lineWidth = 3f; // Width in pixels for UI
     
     private float currentMoney;
     private float currentStockValue;
@@ -43,8 +41,8 @@ public class StockMarketController : MonoBehaviour
     private float graphMaxValue;
     private bool graphRangeInitialized = false;
     
-    // Line Renderer for drawing the stock line
-    private LineRenderer stockLineRenderer;
+    // UI Graphics for drawing the stock line
+    private UILineRenderer uiLineRenderer;
     private GameObject lineObject;
     
     void Start()
@@ -88,13 +86,13 @@ public class StockMarketController : MonoBehaviour
             gameOverPanel.SetActive(false);
         }
         
-        // Find Plane if not assigned
-        if (planeTransform == null)
+        // Find graph panel if not assigned
+        if (graphPanel == null)
         {
-            GameObject planeObj = GameObject.Find("Plane");
-            if (planeObj != null)
+            GameObject panelObj = GameObject.Find("StockPanel");
+            if (panelObj != null)
             {
-                planeTransform = planeObj.transform;
+                graphPanel = panelObj.GetComponent<RectTransform>();
             }
         }
         
@@ -150,21 +148,26 @@ public class StockMarketController : MonoBehaviour
     
     private void SetupLineRenderer()
     {
-        if (planeTransform == null) return;
+        if (graphPanel == null) return;
         
         // Create GameObject for line renderer
         lineObject = new GameObject("StockLine");
-        lineObject.transform.SetParent(planeTransform, false);
-        lineObject.transform.localPosition = Vector3.zero;
+        lineObject.transform.SetParent(graphPanel, false);
         
-        // Add LineRenderer component
-        stockLineRenderer = lineObject.AddComponent<LineRenderer>();
-        stockLineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        stockLineRenderer.startColor = lineColor;
-        stockLineRenderer.endColor = lineColor;
-        stockLineRenderer.startWidth = lineWidth;
-        stockLineRenderer.endWidth = lineWidth;
-        stockLineRenderer.useWorldSpace = true; // Use world space for 3D
+        // Add RectTransform for proper UI positioning
+        RectTransform rectTransform = lineObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.sizeDelta = Vector2.zero;
+        rectTransform.anchoredPosition = Vector2.zero;
+        
+        // Add UILineRenderer component (custom UI component)
+        uiLineRenderer = lineObject.AddComponent<UILineRenderer>();
+        uiLineRenderer.color = lineColor;
+        uiLineRenderer.LineWidth = lineWidth;
+        uiLineRenderer.raycastTarget = false; // Don't block UI interactions
+        
+        Debug.Log($"Line renderer setup complete. Color: {lineColor}, Width: {lineWidth}, Panel: {graphPanel.name}");
     }
     
     private void UpdateStockValue()
@@ -188,8 +191,16 @@ public class StockMarketController : MonoBehaviour
     
     private void DrawStockLine()
     {
-        if (stockLineRenderer == null || planeTransform == null || stockHistory.Count < 2)
+        if (uiLineRenderer == null || graphPanel == null || stockHistory.Count < 2)
+        {
+            if (uiLineRenderer == null)
+                Debug.LogWarning("UILineRenderer is null!");
+            if (graphPanel == null)
+                Debug.LogWarning("GraphPanel is null!");
+            if (stockHistory.Count < 2)
+                Debug.LogWarning($"Stock history has only {stockHistory.Count} points!");
             return;
+        }
         
         // Get current min/max from history
         float[] historyArray = stockHistory.ToArray();
@@ -225,39 +236,36 @@ public class StockMarketController : MonoBehaviour
             range = 0.1f;
         }
         
-        // Set number of points
+        // Get panel dimensions (accounting for padding)
+        float panelWidth = graphPanel.rect.width - (padding * 2f);
+        float panelHeight = graphPanel.rect.height - (padding * 2f);
+        
+        // Create points for the line in UI space
+        List<Vector2> points = new List<Vector2>();
+        
         int pointCount = stockHistory.Count;
-        stockLineRenderer.positionCount = pointCount;
-        
-        // Create points for the line in world space
-        Vector3[] positions = new Vector3[pointCount];
-        
-        // Get plane's world position and rotation
-        Vector3 planePosition = planeTransform.position;
-        Quaternion planeRotation = planeTransform.rotation;
-        
         for (int i = 0; i < pointCount; i++)
         {
             // Normalize value (0 to 1) using stable range
             float normalizedValue = (stockHistory[i] - graphMinValue) / range;
             
-            // Convert to local coordinates relative to plane
-            // X: spread across graph width (left to right)
-            // Y: map to graph height (bottom to top)
-            // Z: height offset above the plane
-            float localX = (i / (float)(pointCount - 1)) * graphWidth - graphWidth * 0.5f;
-            float localY = normalizedValue * graphHeight;
-            float localZ = lineHeightOffset;
+            // Convert to UI coordinates
+            // X: spread across panel width (left to right, with padding)
+            // Y: map to panel height (bottom to top, with padding)
+            float x = (i / (float)(pointCount - 1)) * panelWidth - panelWidth * 0.5f;
+            float y = normalizedValue * panelHeight - panelHeight * 0.5f;
             
-            // Create local position
-            Vector3 localPos = new Vector3(localX, localZ, localY);
-            
-            // Transform to world space (accounting for plane rotation)
-            positions[i] = planePosition + planeRotation * localPos;
+            points.Add(new Vector2(x, y));
         }
         
-        // Update line renderer
-        stockLineRenderer.SetPositions(positions);
+        // Debug: Log first and last point positions
+        if (points.Count > 0)
+        {
+            Debug.Log($"Drawing line with {points.Count} points. First: {points[0]}, Last: {points[points.Count - 1]}, Panel size: {panelWidth}x{panelHeight}");
+        }
+        
+        // Update UI line renderer
+        uiLineRenderer.SetPoints(points.ToArray());
     }
     
     private void OnBuyClicked()
@@ -327,5 +335,124 @@ public class StockMarketController : MonoBehaviour
         }
         
         Debug.Log("Game Over! Final Money: $" + currentMoney.ToString("F2"));
+    }
+}
+
+// Custom UI Line Renderer Component for drawing lines in UI
+[RequireComponent(typeof(RectTransform))]
+public class UILineRenderer : Graphic
+{
+    [SerializeField] private Vector2[] points = new Vector2[0];
+    [SerializeField] private float lineWidth = 3f;
+    
+    public Vector2[] Points
+    {
+        get { return points; }
+        set
+        {
+            points = value;
+            SetVerticesDirty();
+        }
+    }
+    
+    public float LineWidth
+    {
+        get { return lineWidth; }
+        set
+        {
+            lineWidth = value;
+            SetVerticesDirty();
+        }
+    }
+    
+    protected override void OnPopulateMesh(VertexHelper vh)
+    {
+        vh.Clear();
+        
+        if (points == null || points.Length < 2)
+        {
+            Debug.LogWarning($"UILineRenderer: Not enough points! Count: {(points == null ? 0 : points.Length)}");
+            return;
+        }
+        
+        int segmentsAdded = 0;
+        
+        // Create vertices for each line segment
+        for (int i = 0; i < points.Length - 1; i++)
+        {
+            Vector2 start = points[i];
+            Vector2 end = points[i + 1];
+            
+            // Skip if points are too close (prevents division by zero)
+            if (Vector2.Distance(start, end) < 0.001f)
+                continue;
+            
+            // Calculate direction and perpendicular
+            Vector2 direction = (end - start).normalized;
+            Vector2 perpendicular = new Vector2(-direction.y, direction.x);
+            Vector2 offset = perpendicular * (lineWidth * 0.5f);
+            
+            // Create quad vertices
+            UIVertex[] verts = new UIVertex[4];
+            
+            verts[0].position = start - offset;
+            verts[0].color = color;
+            verts[0].uv0 = Vector2.zero;
+            
+            verts[1].position = start + offset;
+            verts[1].color = color;
+            verts[1].uv0 = Vector2.up;
+            
+            verts[2].position = end + offset;
+            verts[2].color = color;
+            verts[2].uv0 = Vector2.one;
+            
+            verts[3].position = end - offset;
+            verts[3].color = color;
+            verts[3].uv0 = Vector2.right;
+            
+            // Add quad to mesh
+            int index = vh.currentVertCount;
+            vh.AddVert(verts[0]);
+            vh.AddVert(verts[1]);
+            vh.AddVert(verts[2]);
+            vh.AddVert(verts[3]);
+            
+            vh.AddTriangle(index, index + 1, index + 2);
+            vh.AddTriangle(index, index + 2, index + 3);
+            
+            segmentsAdded++;
+        }
+        
+        if (segmentsAdded == 0)
+        {
+            Debug.LogWarning($"UILineRenderer: No segments were added! Points: {points.Length}");
+        }
+        else
+        {
+            Debug.Log($"UILineRenderer: Added {segmentsAdded} segments from {points.Length} points");
+        }
+    }
+    
+    protected override void Awake()
+    {
+        base.Awake();
+        // Ensure we have a default material
+        if (material == null)
+        {
+            material = defaultMaterial;
+        }
+    }
+    
+    public void SetPoints(Vector2[] newPoints)
+    {
+        if (newPoints == null)
+        {
+            Debug.LogWarning("UILineRenderer: SetPoints called with null array!");
+            return;
+        }
+        
+        Points = newPoints;
+        Debug.Log($"UILineRenderer: SetPoints called with {newPoints.Length} points");
     }
 }
