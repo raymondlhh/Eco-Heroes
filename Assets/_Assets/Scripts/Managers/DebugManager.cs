@@ -2,11 +2,13 @@ using UnityEngine;
 using System.Collections;
 using TMPro;
 
-public class KeyboardManager : MonoBehaviour
+public class DebugManager : MonoBehaviour
 {
     [Header("MiniGame Settings")]
     [SerializeField] private GameObject miniGamesUI;
     [SerializeField] private GameObject miniGameStockMarket;
+    [SerializeField] private bool IsMiniGameStockMarket = true; // Enable/disable minigame activation
+    [SerializeField] private bool IsDebugging = true; // Enable/disable M key for manual minigame activation
     [SerializeField] private float autoReturnTimer = 5f; // Time in seconds before auto-returning
     [SerializeField] private TextMeshProUGUI timerText; // Timer display text
     
@@ -110,7 +112,9 @@ public class KeyboardManager : MonoBehaviour
     private void Update()
     {
         // Check for M key press to toggle MiniGamesUI and switch camera position
-        if (Input.GetKeyDown(KeyCode.M))
+        // Only trigger if both IsDebugging and IsMiniGameStockMarket are enabled
+        // Note: Auto-activation from Stocks paths ignores IsDebugging
+        if (Input.GetKeyDown(KeyCode.M) && IsDebugging && IsMiniGameStockMarket)
         {
             ToggleMiniGamesUI();
             SwitchCameraPosition();
@@ -254,5 +258,26 @@ public class KeyboardManager : MonoBehaviour
         mainCamera.transform.position = targetPos;
         mainCamera.transform.rotation = targetRot;
         isAtMiniCam = !isAtMiniCam;
+    }
+    
+    /// <summary>
+    /// Activates the minigame (same as pressing M key)
+    /// Can be called externally when player steps on Stocks path
+    /// </summary>
+    public void ActivateMiniGame()
+    {
+        if (!IsMiniGameStockMarket)
+        {
+            Debug.Log("MiniGameStockMarket is disabled. Cannot activate minigame.");
+            return;
+        }
+        
+        // Only activate if not already active
+        if (miniGamesUI != null && !miniGamesUI.activeSelf)
+        {
+            ToggleMiniGamesUI();
+            SwitchCameraPosition();
+            Debug.Log("MiniGame activated automatically (player stepped on Stocks path)");
+        }
     }
 }

@@ -19,6 +19,9 @@ public class CardsManager : MonoBehaviour
     [Header("Player Reference")]
     [SerializeField] private PlayerController player;
     
+    [Header("Debug Manager Reference")]
+    [SerializeField] private DebugManager debugManager;
+    
     private bool isCardAnimating = false;
     
     public bool IsCardAnimating => isCardAnimating;
@@ -35,6 +38,12 @@ public class CardsManager : MonoBehaviour
         if (cardsStartPath == null || cardsEndPath == null)
         {
             FindCardSpawnPoints();
+        }
+        
+        // Find DebugManager if not assigned
+        if (debugManager == null)
+        {
+            debugManager = FindAnyObjectByType<DebugManager>();
         }
         
         // Subscribe to player movement complete event
@@ -83,6 +92,20 @@ public class CardsManager : MonoBehaviour
         if (player != null)
         {
             string waypointName = player.GetCurrentWaypointName();
+            
+            // Check if path contains "Stocks" keyword and activate minigame
+            if (!string.IsNullOrEmpty(waypointName) && waypointName.Contains("Stocks", System.StringComparison.OrdinalIgnoreCase))
+            {
+                if (debugManager != null)
+                {
+                    debugManager.ActivateMiniGame();
+                }
+                else
+                {
+                    Debug.LogWarning("DebugManager not found! Cannot activate minigame for Stocks path.");
+                }
+            }
+            
             SpawnCardForPath(waypointName);
         }
         else

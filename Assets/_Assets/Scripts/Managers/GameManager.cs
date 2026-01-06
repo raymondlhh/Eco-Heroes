@@ -15,6 +15,10 @@ public class GameManager : MonoBehaviour
     [Header("Dice Settings")]
     [SerializeField] private float diceCheckInterval = 0.1f;
     
+    [Header("Debug Settings")]
+    [SerializeField] private bool IsDebugging = false; // Enable debug mode to use fixed movement steps
+    [SerializeField] private int debugFixedSteps = 1; // Fixed number of steps to move when IsDebugging is true
+    
     [Header("Player Reference")]
     [SerializeField] private PlayerController player;
     
@@ -27,11 +31,12 @@ public class GameManager : MonoBehaviour
     private int diceSum = 0;
     private bool isRolling = false;
     private float lastCheckTime = 0f;
-    private KeyboardManager keyboardManager;
+    private DebugManager keyboardManager;
+    private bool isProcessingDiceResult = false;
     
     public int DiceSum => diceSum;
     public bool IsRolling => isRolling;
-    public bool CanRollDice => !isRolling && (cardsManager == null || !cardsManager.IsCardAnimating) && (player == null || !player.IsMoving) && !IsMiniGameActive();
+    public bool CanRollDice => !isRolling && !isProcessingDiceResult && (cardsManager == null || !cardsManager.IsCardAnimating) && (player == null || !player.IsMoving) && !IsMiniGameActive();
     
     // Display current dice values
     public int FirstDiceValue => firstDice != null ? firstDice.CurrentValue : 0;
@@ -68,7 +73,13 @@ public class GameManager : MonoBehaviour
         }
         
         // Find KeyboardManager to check MiniGameStockMarket status
-        keyboardManager = FindAnyObjectByType<KeyboardManager>();
+        keyboardManager = FindAnyObjectByType<DebugManager>();
+        
+        // Subscribe to player movement complete event
+        if (player != null)
+        {
+            player.OnMovementComplete += OnPlayerMovementComplete;
+        }
         
         // Find and hide MiniGamesUI at start
         if (miniGamesUI == null)
@@ -148,8 +159,8 @@ public class GameManager : MonoBehaviour
             
             if (!firstDice.IsRolling && !secondDice.IsRolling)
             {
-                CalculateDiceSum();
                 isRolling = false;
+                StartCoroutine(ProcessDiceResult());
             }
         }
     }
@@ -306,10 +317,13 @@ public class GameManager : MonoBehaviour
         lastCheckTime = Time.time;
     }
     
-    private void CalculateDiceSum()
+    private IEnumerator ProcessDiceResult()
     {
+        isProcessingDiceResult = true;
+        
         if (firstDice != null && secondDice != null)
         {
+            // Calculate dice sum
             diceSum = firstDice.CurrentValue + secondDice.CurrentValue;
             
             // Display the dice sum prominently
@@ -322,16 +336,149 @@ public class GameManager : MonoBehaviour
             Debug.Log(message);
             DisplayDiceSum();
             
-            // Move player based on dice sum
-            if (player != null && diceSum > 0)
+            // Move dice back to their spawners
+            yield return StartCoroutine(MoveDiceToSpawners());
+            
+            // Wait 2 seconds to show the dice numbers
+            yield return new WaitForSeconds(2f);
+            
+            // Destroy the dice
+            if (firstDice != null)
             {
-                player.OnDiceRollComplete(diceSum);
+                Destroy(firstDice.gameObject);
+                firstDice = null;
+            }
+            
+            if (secondDice != null)
+            {
+                Destroy(secondDice.gameObject);
+                secondDice = null;
+            }
+            
+            // Determine movement steps: use fixed value if debugging, otherwise use dice sum
+            int movementSteps = IsDebugging ? debugFixedSteps : diceSum;
+            
+            // Log debug mode status if enabled
+            if (IsDebugging)
+            {
+                Debug.Log($"DEBUG MODE: Using fixed steps ({debugFixedSteps}) instead of dice sum ({diceSum})");
+            }
+            
+            // Move player based on calculated movement steps
+            if (player != null && movementSteps > 0)
+            {
+                player.OnDiceRollComplete(movementSteps);
             }
             else if (player == null)
             {
                 Debug.LogWarning("Player not found! Cannot move player.");
+                isProcessingDiceResult = false;
             }
+            // Note: isProcessingDiceResult will be set to false in OnPlayerMovementComplete
         }
+        else
+        {
+            isProcessingDiceResult = false;
+        }
+    }
+    
+    private IEnumerator MoveDiceToSpawners()
+    {
+        float moveDuration = 0.5f; // Duration for moving dice back
+        float elapsedTime = 0f;
+        
+        Vector3 firstDiceStartPos = firstDice.transform.position;
+        Vector3 firstDiceTargetPos = firstSpawner != null ? firstSpawner.position : firstDiceStartPos;
+        Quaternion firstDiceStartRot = firstDice.transform.rotation;
+        Quaternion firstDiceTargetRot = firstSpawner != null ? firstSpawner.rotation : Quaternion.identity;
+        
+        Vector3 secondDiceStartPos = secondDice.transform.position;
+        Vector3 secondDiceTargetPos = secondSpawner != null ? secondSpawner.position : secondDiceStartPos;
+        Quaternion secondDiceStartRot = secondDice.transform.rotation;
+        Quaternion secondDiceTargetRot = secondSpawner != null ? secondSpawner.rotation : Quaternion.identity;
+        
+        // Make dice kinematic so they can be moved smoothly
+        Rigidbody firstRb = firstDice.GetComponent<Rigidbody>();
+        Rigidbody secondRb = secondDice.GetComponent<Rigidbody>();
+        
+        if (firstRb != null)
+        {
+            firstRb.isKinematic = true;
+            firstRb.useGravity = false;
+        }
+        
+        if (secondRb != null)
+        {
+            secondRb.isKinematic = true;
+            secondRb.useGravity = false;
+        }
+        
+        while (elapsedTime < moveDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / moveDuration;
+            
+            // Smooth curve (ease in-out)
+            float curve = t * t * (3f - 2f * t);
+            
+            // Move first dice
+            if (firstDice != null)
+            {
+                firstDice.transform.position = Vector3.Lerp(firstDiceStartPos, firstDiceTargetPos, curve);
+                firstDice.transform.rotation = Quaternion.Lerp(firstDiceStartRot, firstDiceTargetRot, curve);
+            }
+            
+            // Move second dice
+            if (secondDice != null)
+            {
+                secondDice.transform.position = Vector3.Lerp(secondDiceStartPos, secondDiceTargetPos, curve);
+                secondDice.transform.rotation = Quaternion.Lerp(secondDiceStartRot, secondDiceTargetRot, curve);
+            }
+            
+            yield return null;
+        }
+        
+        // Ensure exact final positions
+        if (firstDice != null)
+        {
+            firstDice.transform.position = firstDiceTargetPos;
+            firstDice.transform.rotation = firstDiceTargetRot;
+        }
+        
+        if (secondDice != null)
+        {
+            secondDice.transform.position = secondDiceTargetPos;
+            secondDice.transform.rotation = secondDiceTargetRot;
+        }
+    }
+    
+    private void OnPlayerMovementComplete()
+    {
+        // Check if there is a card animating
+        if (cardsManager != null && cardsManager.IsCardAnimating)
+        {
+            // Wait for card to be destroyed, then spawn dice
+            StartCoroutine(WaitForCardAndRespawnDice());
+        }
+        else
+        {
+            // No card, spawn dice immediately
+            SpawnDice();
+            isProcessingDiceResult = false;
+        }
+    }
+    
+    private IEnumerator WaitForCardAndRespawnDice()
+    {
+        // Wait until card animation is complete (card is destroyed)
+        while (cardsManager != null && cardsManager.IsCardAnimating)
+        {
+            yield return null;
+        }
+        
+        // Card has been destroyed, spawn dice back
+        SpawnDice();
+        isProcessingDiceResult = false;
     }
     
     private void FindPlayer()
@@ -385,5 +532,14 @@ public class GameManager : MonoBehaviour
         
         diceSum = 0;
         isRolling = false;
+    }
+    
+    private void OnDestroy()
+    {
+        // Unsubscribe from player movement complete event
+        if (player != null)
+        {
+            player.OnMovementComplete -= OnPlayerMovementComplete;
+        }
     }
 }
