@@ -185,5 +185,57 @@ public class DiceController : MonoBehaviour
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
     }
+    
+    /// <summary>
+    /// Gets the rotation quaternion needed to show the specified value on top (facing up)
+    /// </summary>
+    public Quaternion GetRotationForValueOnTop(int value)
+    {
+        // Face mapping: [Up, Down, Forward, Back, Right, Left] = [1, 6, 2, 5, 3, 4]
+        // Find which face index has this value
+        int faceIndex = -1;
+        for (int i = 0; i < faceValues.Length; i++)
+        {
+            if (faceValues[i] == value)
+            {
+                faceIndex = i;
+                break;
+            }
+        }
+        
+        if (faceIndex == -1)
+        {
+            Debug.LogWarning($"Value {value} not found in face mapping! Using identity rotation.");
+            return Quaternion.identity;
+        }
+        
+        // Calculate rotation to make this face point up
+        // faceIndex: 0=Up, 1=Down, 2=Forward, 3=Back, 4=Right, 5=Left
+        Quaternion rotation = Quaternion.identity;
+        
+        switch (faceIndex)
+        {
+            case 0: // Up - already pointing up, no rotation needed
+                rotation = Quaternion.identity;
+                break;
+            case 1: // Down - rotate 180 degrees around Forward axis
+                rotation = Quaternion.Euler(180f, 0f, 0f);
+                break;
+            case 2: // Forward - rotate -90 degrees around Right axis (or 90 around Left)
+                rotation = Quaternion.Euler(-90f, 0f, 0f);
+                break;
+            case 3: // Back - rotate 90 degrees around Right axis
+                rotation = Quaternion.Euler(90f, 0f, 0f);
+                break;
+            case 4: // Right - rotate 90 degrees around Forward axis
+                rotation = Quaternion.Euler(0f, 0f, -90f);
+                break;
+            case 5: // Left - rotate -90 degrees around Forward axis
+                rotation = Quaternion.Euler(0f, 0f, 90f);
+                break;
+        }
+        
+        return rotation;
+    }
 }
 

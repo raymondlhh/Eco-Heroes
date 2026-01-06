@@ -390,12 +390,23 @@ public class GameManager : MonoBehaviour
         Vector3 firstDiceStartPos = firstDice.transform.position;
         Vector3 firstDiceTargetPos = firstSpawner != null ? firstSpawner.position : firstDiceStartPos;
         Quaternion firstDiceStartRot = firstDice.transform.rotation;
-        Quaternion firstDiceTargetRot = firstSpawner != null ? firstSpawner.rotation : Quaternion.identity;
         
         Vector3 secondDiceStartPos = secondDice.transform.position;
         Vector3 secondDiceTargetPos = secondSpawner != null ? secondSpawner.position : secondDiceStartPos;
         Quaternion secondDiceStartRot = secondDice.transform.rotation;
-        Quaternion secondDiceTargetRot = secondSpawner != null ? secondSpawner.rotation : Quaternion.identity;
+        
+        // Calculate target rotations to show the rolled values on top
+        // Get the base spawner rotations
+        Quaternion firstSpawnerBaseRot = firstSpawner != null ? firstSpawner.rotation : Quaternion.identity;
+        Quaternion secondSpawnerBaseRot = secondSpawner != null ? secondSpawner.rotation : Quaternion.identity;
+        
+        // Calculate rotation needed to show first dice value on top
+        Quaternion firstDiceValueRot = firstDice != null ? firstDice.GetRotationForValueOnTop(firstDice.CurrentValue) : Quaternion.identity;
+        Quaternion firstDiceTargetRot = firstSpawnerBaseRot * firstDiceValueRot;
+        
+        // Calculate rotation needed to show second dice value on top
+        Quaternion secondDiceValueRot = secondDice != null ? secondDice.GetRotationForValueOnTop(secondDice.CurrentValue) : Quaternion.identity;
+        Quaternion secondDiceTargetRot = secondSpawnerBaseRot * secondDiceValueRot;
         
         // Make dice kinematic so they can be moved smoothly
         Rigidbody firstRb = firstDice.GetComponent<Rigidbody>();
