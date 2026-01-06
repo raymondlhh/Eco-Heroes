@@ -230,8 +230,6 @@ MonoBehaviour:
   firstSpawner: {fileID: 241609133}
   secondSpawner: {fileID: 1305781112}
   oneDiceSpawner: {fileID: 1225757851}
-  firstDice: {fileID: 0}
-  secondDice: {fileID: 0}
   dicePrefab: {fileID: 512676549986405767, guid: 133e4974bd8608147bcc3880ae313a26, type: 3}
   diceCheckInterval: 2
   IsDebugging: 1
@@ -8411,7 +8409,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8524865174168533033, guid: cc311b4f249efe14f8c3b14680b21500, type: 3}
       propertyPath: jumpDuration
-      value: 0.3
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 8524865174168533033, guid: cc311b4f249efe14f8c3b14680b21500, type: 3}
       propertyPath: path39Waypoint

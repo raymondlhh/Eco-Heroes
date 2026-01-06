@@ -529,10 +529,35 @@ public class GameManager : MonoBehaviour
         // Check if we're using one dice mode
         bool useOneDice = player != null && player.ShouldUseOneDice;
         
+        if (firstDice == null)
+        {
+            Debug.LogWarning("First dice is null! Cannot move dice to spawner.");
+            yield break;
+        }
+        
         Vector3 firstDiceStartPos = firstDice.transform.position;
-        Vector3 firstDiceTargetPos = useOneDice && oneDiceSpawner != null 
-            ? oneDiceSpawner.position 
-            : (firstSpawner != null ? firstSpawner.position : firstDiceStartPos);
+        
+        // Determine target spawner for first dice
+        Transform firstTargetSpawner = null;
+        if (useOneDice)
+        {
+            firstTargetSpawner = oneDiceSpawner != null ? oneDiceSpawner : firstSpawner;
+            if (firstTargetSpawner == null)
+            {
+                Debug.LogWarning("One dice spawner and first spawner are both null! Using dice current position.");
+                firstTargetSpawner = firstDice.transform;
+            }
+            else
+            {
+                Debug.Log($"Moving one dice to spawner: {firstTargetSpawner.name}");
+            }
+        }
+        else
+        {
+            firstTargetSpawner = firstSpawner != null ? firstSpawner : firstDice.transform;
+        }
+        
+        Vector3 firstDiceTargetPos = firstTargetSpawner.position;
         Quaternion firstDiceStartRot = firstDice.transform.rotation;
         
         Vector3 secondDiceStartPos = secondDice != null ? secondDice.transform.position : Vector3.zero;
@@ -540,8 +565,7 @@ public class GameManager : MonoBehaviour
         Quaternion secondDiceStartRot = secondDice != null ? secondDice.transform.rotation : Quaternion.identity;
         
         // Calculate target rotations to show the rolled values on top
-        // Get the base spawner rotations
-        Transform firstTargetSpawner = useOneDice && oneDiceSpawner != null ? oneDiceSpawner : firstSpawner;
+        // Get the base spawner rotations (firstTargetSpawner was already determined above)
         Quaternion firstSpawnerBaseRot = firstTargetSpawner != null ? firstTargetSpawner.rotation : Quaternion.identity;
         Quaternion secondSpawnerBaseRot = secondSpawner != null ? secondSpawner.rotation : Quaternion.identity;
         
@@ -554,8 +578,8 @@ public class GameManager : MonoBehaviour
         Quaternion secondDiceTargetRot = secondSpawnerBaseRot * secondDiceValueRot;
         
         // Make dice kinematic so they can be moved smoothly
-        Rigidbody firstRb = firstDice.GetComponent<Rigidbody>();
-        Rigidbody secondRb = secondDice.GetComponent<Rigidbody>();
+        Rigidbody firstRb = firstDice != null ? firstDice.GetComponent<Rigidbody>() : null;
+        Rigidbody secondRb = !useOneDice && secondDice != null ? secondDice.GetComponent<Rigidbody>() : null;
         
         if (firstRb != null)
         {
