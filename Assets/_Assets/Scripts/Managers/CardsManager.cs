@@ -109,7 +109,7 @@ public class CardsManager : MonoBehaviour
             return;
         }
         
-        GameObject cardPrefab = GetCardPrefabForPath(pathName);
+        var (cardPrefab, isRandomSelection) = GetCardPrefabForPath(pathName);
         
         if (cardPrefab == null)
         {
@@ -135,54 +135,113 @@ public class CardsManager : MonoBehaviour
         // Monitor when card animation completes
         StartCoroutine(WaitForCardAnimation(cardController));
         
-        Debug.Log($"Spawned card: {cardPrefab.name} for path: {pathName}");
+        // Log with indication of random selection
+        if (isRandomSelection)
+        {
+            string categoryName = ExtractCategoryFromPath(pathName);
+            Debug.Log($"Spawned card: {cardPrefab.name} for path: {pathName} [Randomly selected from {categoryName} Cards]");
+        }
+        else
+        {
+            Debug.Log($"Spawned card: {cardPrefab.name} for path: {pathName}");
+        }
     }
     
     /// <summary>
     /// Gets the appropriate card prefab based on the path name
+    /// Returns a tuple with the card prefab and a boolean indicating if it was randomly selected
     /// </summary>
-    private GameObject GetCardPrefabForPath(string pathName)
+    private (GameObject cardPrefab, bool isRandomSelection) GetCardPrefabForPath(string pathName)
     {
         // Normalize path name (remove spaces, handle case)
         string normalizedPath = pathName.Trim();
         
+        // Extract category name from path format: "PathXX_Category" -> "Category"
+        string categoryName = ExtractCategoryFromPath(normalizedPath);
+        
+        // Check if category name ends with digits (e.g., "Business01", "RealEstate02")
+        // This indicates a specific card, not a category
+        bool isSpecificCard = System.Text.RegularExpressions.Regex.IsMatch(categoryName, @"\d+$");
+        
         // Check for exact match first (e.g., "Business01", "Chance02", etc.)
-        GameObject exactMatch = FindExactCardMatch(normalizedPath);
+        GameObject exactMatch = FindExactCardMatch(categoryName);
         if (exactMatch != null)
         {
-            return exactMatch;
+            return (exactMatch, false); // Exact match, not random
         }
         
         // Check for category match (e.g., "Business", "Chance", "FixedIncome", etc.)
         // Handle different naming conventions
-        if (normalizedPath.StartsWith("Business", System.StringComparison.OrdinalIgnoreCase))
+        GameObject randomCard = null;
+        
+        if (categoryName.StartsWith("Business", System.StringComparison.OrdinalIgnoreCase))
         {
-            return GetRandomCardFromArray(businessCards, "Business");
+            randomCard = GetRandomCardFromArray(businessCards, "Business");
         }
-        else if (normalizedPath.StartsWith("Chance", System.StringComparison.OrdinalIgnoreCase))
+        else if (categoryName.StartsWith("Chance", System.StringComparison.OrdinalIgnoreCase))
         {
-            return GetRandomCardFromArray(chanceCards, "Chance");
+            randomCard = GetRandomCardFromArray(chanceCards, "Chance");
         }
-        else if (normalizedPath.StartsWith("MarketWatch", System.StringComparison.OrdinalIgnoreCase))
+        else if (categoryName.StartsWith("MarketWatch", System.StringComparison.OrdinalIgnoreCase))
         {
-            return GetRandomCardFromArray(marketWatchCards, "MarketWatch");
+            randomCard = GetRandomCardFromArray(marketWatchCards, "MarketWatch");
         }
-        else if (normalizedPath.StartsWith("RealEstate", System.StringComparison.OrdinalIgnoreCase))
+        else if (categoryName.StartsWith("RealEstate", System.StringComparison.OrdinalIgnoreCase))
         {
-            return GetRandomCardFromArray(realEstateCards, "RealEstate");
+            randomCard = GetRandomCardFromArray(realEstateCards, "RealEstate");
         }
-        else if (normalizedPath.StartsWith("UnitTrustEquities", System.StringComparison.OrdinalIgnoreCase) || 
-                 normalizedPath.StartsWith("Equities", System.StringComparison.OrdinalIgnoreCase))
+        else if (categoryName.StartsWith("UnitTrustEquities", System.StringComparison.OrdinalIgnoreCase) || 
+                 categoryName.StartsWith("MutualFundEquities", System.StringComparison.OrdinalIgnoreCase) ||
+                 categoryName.StartsWith("Equities", System.StringComparison.OrdinalIgnoreCase))
         {
-            return GetRandomCardFromArray(unitTrustEquitiesCards, "UnitTrustEquities");
+            randomCard = GetRandomCardFromArray(unitTrustEquitiesCards, "UnitTrustEquities");
         }
-        else if (normalizedPath.StartsWith("UnitTrustFixedIncome", System.StringComparison.OrdinalIgnoreCase) || 
-                 normalizedPath.StartsWith("FixedIncome", System.StringComparison.OrdinalIgnoreCase))
+        else if (categoryName.StartsWith("UnitTrustFixedIncome", System.StringComparison.OrdinalIgnoreCase) || 
+                 categoryName.StartsWith("MutualFundFixedIncome", System.StringComparison.OrdinalIgnoreCase) ||
+                 categoryName.StartsWith("FixedIncome", System.StringComparison.OrdinalIgnoreCase))
         {
-            return GetRandomCardFromArray(unitTrustFixedIncomeCards, "UnitTrustFixedIncome");
+            randomCard = GetRandomCardFromArray(unitTrustFixedIncomeCards, "UnitTrustFixedIncome");
         }
         
-        return null;
+        if (randomCard != null)
+        {
+            // If the category name doesn't have a number, it's a random selection
+            // If it has a number but no exact match was found, it's also random (fallback)
+            return (randomCard, !isSpecificCard);
+        }
+        
+        return (null, false);
+    }
+    
+    /// <summary>
+    /// Extracts the category name from path format "PathXX_Category" -> "Category"
+    /// If path doesn't match the format, returns the original path name
+    /// </summary>
+    private string ExtractCategoryFromPath(string pathName)
+    {
+        // Check if path follows the pattern "PathXX_Category" where XX is digits
+        int underscoreIndex = pathName.IndexOf('_');
+        
+        if (underscoreIndex > 0 && underscoreIndex < pathName.Length - 1)
+        {
+            string prefix = pathName.Substring(0, underscoreIndex);
+            
+            // Check if prefix starts with "Path" followed by digits
+            if (prefix.StartsWith("Path", System.StringComparison.OrdinalIgnoreCase))
+            {
+                string numberPart = prefix.Substring(4); // Skip "Path"
+                
+                // Check if the remaining part is all digits
+                if (numberPart.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(numberPart, @"^\d+$"))
+                {
+                    // Extract everything after the underscore
+                    return pathName.Substring(underscoreIndex + 1);
+                }
+            }
+        }
+        
+        // If path doesn't match the pattern, return the original name
+        return pathName;
     }
     
     /// <summary>

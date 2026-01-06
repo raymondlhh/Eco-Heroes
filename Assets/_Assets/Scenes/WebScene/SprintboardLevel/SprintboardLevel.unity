@@ -1297,7 +1297,7 @@ GameObject:
   - component: {fileID: 250736323}
   - component: {fileID: 250736322}
   m_Layer: 0
-  m_Name: Pah38_RealEstate10
+  m_Name: Path38_RealEstate10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1712,6 +1712,9 @@ MonoBehaviour:
   - {fileID: 4364557387411260373, guid: b1b5799ffe6fc6e4b837f01340032871, type: 3}
   - {fileID: 3549365339854937624, guid: a4b41eb0c5f62a740b4d879c5876230e, type: 3}
   - {fileID: 5016354325555884783, guid: e771725ce65f1204389dfa4c9f8c1683, type: 3}
+  - {fileID: 4364557387411260373, guid: 3644156c4a7e7c047a9b14132c907da4, type: 3}
+  - {fileID: 3549365339854937624, guid: 98ac3619059fe0e4b9ea033b6becf78f, type: 3}
+  - {fileID: 5016354325555884783, guid: 82324a3c37aa3054bb817ee4f8dd1ec4, type: 3}
   chanceCards:
   - {fileID: 1738681261278392698, guid: da87f0de5d935994dbcde4c11c74e931, type: 3}
   - {fileID: 6841786800119792779, guid: 17fc190863b513843a653e2ac7117828, type: 3}
@@ -1725,6 +1728,15 @@ MonoBehaviour:
   - {fileID: 4991572773560107954, guid: baa362d07b57fb14086d298baabb361a, type: 3}
   - {fileID: 2418527637634774238, guid: 7894e9bff37c7f743a8fdb3b962c61f1, type: 3}
   - {fileID: 6746757004000228789, guid: 96a1cf8757b592948bf2c6ec6beebe6b, type: 3}
+  - {fileID: 4991572773560107954, guid: 50cf21e0145ec55448a0d4ddcbf212a8, type: 3}
+  - {fileID: 2418527637634774238, guid: 923e8f74c89eae344a987df072ca4b2d, type: 3}
+  - {fileID: 6746757004000228789, guid: d6c39737c4df92547820e3898afafaa0, type: 3}
+  - {fileID: 4991572773560107954, guid: a7a62d3c18c959d4e9c7b66ed132bf66, type: 3}
+  - {fileID: 2418527637634774238, guid: 73a6b648e87795e478d162623079bc06, type: 3}
+  - {fileID: 6746757004000228789, guid: 0643b6fec5dfe3b4baa18b15fd24ffce, type: 3}
+  - {fileID: 4991572773560107954, guid: c927b9c6522e1c94893365ec7726a6a4, type: 3}
+  - {fileID: 2418527637634774238, guid: d63264351a9fe5146af29bf2799af44e, type: 3}
+  - {fileID: 6746757004000228789, guid: e53318d2d5b531440ab339a6f27ebcd6, type: 3}
   unitTrustEquitiesCards:
   - {fileID: 8414208613853776096, guid: 7864d4351a15dcb4d9c34064124b7ed1, type: 3}
   - {fileID: 4167104633637383967, guid: 17afc68506af4314686f24fa1b1d5cfc, type: 3}
@@ -4249,7 +4261,7 @@ GameObject:
   - component: {fileID: 1172587757}
   - component: {fileID: 1172587756}
   m_Layer: 0
-  m_Name: Path40_Business
+  m_Name: Path40_Business06
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4823,7 +4835,7 @@ GameObject:
   - component: {fileID: 1424726184}
   - component: {fileID: 1424726183}
   m_Layer: 0
-  m_Name: Path41_RealEsatate11
+  m_Name: Path41_RealEstate11
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
