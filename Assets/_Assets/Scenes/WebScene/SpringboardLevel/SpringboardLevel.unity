@@ -229,6 +229,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firstSpawner: {fileID: 241609133}
   secondSpawner: {fileID: 1305781112}
+  oneDiceSpawner: {fileID: 1225757851}
   firstDice: {fileID: 0}
   secondDice: {fileID: 0}
   dicePrefab: {fileID: 512676549986405767, guid: 133e4974bd8608147bcc3880ae313a26, type: 3}

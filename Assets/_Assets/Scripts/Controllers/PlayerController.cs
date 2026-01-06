@@ -24,12 +24,14 @@ public class PlayerController : MonoBehaviour
     private int fortuneRoadSequenceIndex = -1;
     private int savedNormalPathIndex = -1; // Store the normal path index to resume after Fortune Road
     private bool shouldEnterFortuneRoad = false; // Flag to indicate next movement should go through Fortune Road
+    private bool shouldUseOneDice = false; // Flag to indicate next dice roll should use only one dice
     
     // Event for when player movement completes
     public System.Action OnMovementComplete;
     
     public bool IsMoving => isMoving;
     public int CurrentPathIndex => currentPathIndex;
+    public bool ShouldUseOneDice => shouldUseOneDice; // Public property to check if one dice should be used
     
     /// <summary>
     /// Gets the name of the current waypoint the player is standing on
@@ -118,6 +120,7 @@ public class PlayerController : MonoBehaviour
                 isInFortuneRoadSequence = false;
                 fortuneRoadSequenceIndex = -1;
                 shouldEnterFortuneRoad = false;
+                shouldUseOneDice = false; // Clear one dice flag after using it
                 
                 Debug.Log("Completed Fortune Road sequence! Resuming normal path at Path39.");
             }
@@ -128,6 +131,7 @@ public class PlayerController : MonoBehaviour
                 isInFortuneRoadSequence = false;
                 fortuneRoadSequenceIndex = -1;
                 shouldEnterFortuneRoad = false;
+                shouldUseOneDice = false; // Clear one dice flag
                 currentPathIndex = savedNormalPathIndex;
             }
         }
@@ -159,11 +163,12 @@ public class PlayerController : MonoBehaviour
             : (currentPathIndex < pathWaypoints.Count ? pathWaypoints[currentPathIndex].name : "Unknown");
         Debug.Log($"Player movement complete! Now at waypoint: {currentWaypointName}");
         
-        // Check if player stopped on a Fortune Road tile - set flag for next movement
+        // Check if player stopped on a Fortune Road tile - set flags for next movement
         if (!isInFortuneRoadSequence && IsCurrentWaypointFortuneRoad())
         {
             shouldEnterFortuneRoad = true;
-            Debug.Log($"Player stopped on Fortune Road! Next dice roll will go through Fortune Road sequence.");
+            shouldUseOneDice = true; // Next dice roll should use only one dice
+            Debug.Log($"Player stopped on Fortune Road! Next dice roll will use one dice and go through Fortune Road sequence.");
         }
         
         // Notify that movement is complete
@@ -220,6 +225,7 @@ public class PlayerController : MonoBehaviour
         fortuneRoadSequenceIndex = -1;
         savedNormalPathIndex = -1;
         shouldEnterFortuneRoad = false;
+        shouldUseOneDice = false;
     }
     
     /// <summary>

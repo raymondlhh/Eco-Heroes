@@ -6,10 +6,11 @@ public class GameManager : MonoBehaviour
     [Header("Spawner References")]
     [SerializeField] private Transform firstSpawner;
     [SerializeField] private Transform secondSpawner;
+    [SerializeField] private Transform oneDiceSpawner; // Spawner for one dice mode (OneDice/FirstSpawner)
     
     [Header("Dice References")]
-    [SerializeField] private DiceController firstDice;
-    [SerializeField] private DiceController secondDice;
+    private DiceController firstDice; // Managed internally, not shown in Inspector
+    private DiceController secondDice; // Managed internally, not shown in Inspector
     [SerializeField] private GameObject dicePrefab;
     
     [Header("Dice Settings")]
@@ -157,7 +158,14 @@ public class GameManager : MonoBehaviour
         {
             lastCheckTime = Time.time;
             
-            if (!firstDice.IsRolling && !secondDice.IsRolling)
+            // Check if we're using one dice mode
+            bool useOneDice = player != null && player.ShouldUseOneDice;
+            
+            bool diceFinished = useOneDice 
+                ? !firstDice.IsRolling 
+                : (!firstDice.IsRolling && !secondDice.IsRolling);
+            
+            if (diceFinished)
             {
                 isRolling = false;
                 StartCoroutine(ProcessDiceResult());
@@ -170,6 +178,27 @@ public class GameManager : MonoBehaviour
         // Try to find spawners by name
         GameObject firstSpawnerObj = GameObject.Find("FirstSpawner");
         GameObject secondSpawnerObj = GameObject.Find("SecondSpawner");
+        
+        // Try to find OneDice/FirstSpawner for one dice mode
+        GameObject oneDiceParent = GameObject.Find("OneDice");
+        if (oneDiceParent != null)
+        {
+            Transform oneDiceFirstSpawner = oneDiceParent.transform.Find("FirstSpawner");
+            if (oneDiceFirstSpawner != null)
+            {
+                oneDiceSpawner = oneDiceFirstSpawner;
+            }
+        }
+        
+        // Fallback: try to find OneDice/FirstSpawner directly
+        if (oneDiceSpawner == null)
+        {
+            Transform oneDiceFirstSpawner = GameObject.Find("OneDice/FirstSpawner")?.transform;
+            if (oneDiceFirstSpawner != null)
+            {
+                oneDiceSpawner = oneDiceFirstSpawner;
+            }
+        }
         
         if (firstSpawnerObj != null)
         {
@@ -198,19 +227,44 @@ public class GameManager : MonoBehaviour
     
     private void SpawnDice()
     {
-        // Remove any existing dice from first spawner
-        if (firstSpawner != null)
+        // Check if player should use one dice (after stopping on Fortune Road)
+        bool useOneDice = player != null && player.ShouldUseOneDice;
+        
+        if (useOneDice && oneDiceSpawner != null)
         {
-            // Destroy all children (existing dice)
-            for (int i = firstSpawner.childCount - 1; i >= 0; i--)
+            // One dice mode: spawn only one dice at OneDice/FirstSpawner
+            Debug.Log("Spawning one dice at OneDice/FirstSpawner (Fortune Road mode)");
+            
+            // Destroy all existing dice from both spawners
+            if (firstSpawner != null)
             {
-                Destroy(firstSpawner.GetChild(i).gameObject);
+                for (int i = firstSpawner.childCount - 1; i >= 0; i--)
+                {
+                    Destroy(firstSpawner.GetChild(i).gameObject);
+                }
             }
             
-            // Spawn new dice at first spawner
-            if (dicePrefab != null)
+            if (secondSpawner != null)
             {
-                GameObject spawnedDice = Instantiate(dicePrefab, firstSpawner.position, firstSpawner.rotation, firstSpawner);
+                for (int i = secondSpawner.childCount - 1; i >= 0; i--)
+                {
+                    Destroy(secondSpawner.GetChild(i).gameObject);
+                }
+            }
+            
+            // Destroy any existing dice from one dice spawner
+            if (oneDiceSpawner != null)
+            {
+                for (int i = oneDiceSpawner.childCount - 1; i >= 0; i--)
+                {
+                    Destroy(oneDiceSpawner.GetChild(i).gameObject);
+                }
+            }
+            
+            // Spawn one dice at OneDice/FirstSpawner
+            if (dicePrefab != null && oneDiceSpawner != null)
+            {
+                GameObject spawnedDice = Instantiate(dicePrefab, oneDiceSpawner.position, oneDiceSpawner.rotation, oneDiceSpawner);
                 spawnedDice.name = "FirstDice";
                 firstDice = spawnedDice.GetComponent<DiceController>();
                 
@@ -218,37 +272,70 @@ public class GameManager : MonoBehaviour
                 {
                     firstDice = spawnedDice.AddComponent<DiceController>();
                 }
+                
+                // Set second dice to null for one dice mode
+                secondDice = null;
             }
             else
             {
-                Debug.LogError("Dice Prefab is not assigned! Cannot spawn dice.");
+                Debug.LogError("Dice Prefab or OneDiceSpawner is not assigned! Cannot spawn dice.");
             }
         }
-        
-        // Remove any existing dice from second spawner
-        if (secondSpawner != null)
+        else
         {
-            // Destroy all children (existing dice)
-            for (int i = secondSpawner.childCount - 1; i >= 0; i--)
+            // Normal mode: spawn two dice
+            // Remove any existing dice from first spawner
+            if (firstSpawner != null)
             {
-                Destroy(secondSpawner.GetChild(i).gameObject);
-            }
-            
-            // Spawn new dice at second spawner
-            if (dicePrefab != null)
-            {
-                GameObject spawnedDice = Instantiate(dicePrefab, secondSpawner.position, secondSpawner.rotation, secondSpawner);
-                spawnedDice.name = "SecondDice";
-                secondDice = spawnedDice.GetComponent<DiceController>();
-                
-                if (secondDice == null)
+                // Destroy all children (existing dice)
+                for (int i = firstSpawner.childCount - 1; i >= 0; i--)
                 {
-                    secondDice = spawnedDice.AddComponent<DiceController>();
+                    Destroy(firstSpawner.GetChild(i).gameObject);
+                }
+                
+                // Spawn new dice at first spawner
+                if (dicePrefab != null)
+                {
+                    GameObject spawnedDice = Instantiate(dicePrefab, firstSpawner.position, firstSpawner.rotation, firstSpawner);
+                    spawnedDice.name = "FirstDice";
+                    firstDice = spawnedDice.GetComponent<DiceController>();
+                    
+                    if (firstDice == null)
+                    {
+                        firstDice = spawnedDice.AddComponent<DiceController>();
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Dice Prefab is not assigned! Cannot spawn dice.");
                 }
             }
-            else
+            
+            // Remove any existing dice from second spawner
+            if (secondSpawner != null)
             {
-                Debug.LogError("Dice Prefab is not assigned! Cannot spawn dice.");
+                // Destroy all children (existing dice)
+                for (int i = secondSpawner.childCount - 1; i >= 0; i--)
+                {
+                    Destroy(secondSpawner.GetChild(i).gameObject);
+                }
+                
+                // Spawn new dice at second spawner
+                if (dicePrefab != null)
+                {
+                    GameObject spawnedDice = Instantiate(dicePrefab, secondSpawner.position, secondSpawner.rotation, secondSpawner);
+                    spawnedDice.name = "SecondDice";
+                    secondDice = spawnedDice.GetComponent<DiceController>();
+                    
+                    if (secondDice == null)
+                    {
+                        secondDice = spawnedDice.AddComponent<DiceController>();
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Dice Prefab is not assigned! Cannot spawn dice.");
+                }
             }
         }
     }
@@ -296,7 +383,16 @@ public class GameManager : MonoBehaviour
     
     public void RollDice()
     {
-        if (isRolling || firstDice == null || secondDice == null)
+        // Check if we should use one dice
+        bool useOneDice = player != null && player.ShouldUseOneDice;
+        
+        if (isRolling || firstDice == null)
+        {
+            return;
+        }
+        
+        // In one dice mode, secondDice can be null
+        if (!useOneDice && secondDice == null)
         {
             return;
         }
@@ -310,9 +406,19 @@ public class GameManager : MonoBehaviour
             AudioManager.Instance.PlaySFX("RollingDice");
         }
         
-        // Roll both dice
-        firstDice.RollDice();
-        secondDice.RollDice();
+        // Roll dice(s)
+        if (useOneDice)
+        {
+            // Roll only first dice
+            firstDice.RollDice();
+            Debug.Log("Rolling one dice (Fortune Road mode)");
+        }
+        else
+        {
+            // Roll both dice
+            firstDice.RollDice();
+            secondDice.RollDice();
+        }
         
         lastCheckTime = Time.time;
     }
@@ -321,19 +427,49 @@ public class GameManager : MonoBehaviour
     {
         isProcessingDiceResult = true;
         
-        if (firstDice != null && secondDice != null)
+        // Check if we're using one dice mode
+        bool useOneDice = player != null && player.ShouldUseOneDice;
+        
+        if (firstDice != null)
         {
             // Calculate dice sum
-            diceSum = firstDice.CurrentValue + secondDice.CurrentValue;
+            if (useOneDice)
+            {
+                // One dice mode: use only first dice value
+                diceSum = firstDice.CurrentValue;
+                
+                // Display the dice result
+                string message = $"=== DICE ROLL RESULT (ONE DICE) ===\n" +
+                               $"Dice Value: {firstDice.CurrentValue}\n" +
+                               $"TOTAL SUM: {diceSum}\n" +
+                               $"========================";
+                
+                Debug.Log(message);
+            }
+            else
+            {
+                // Two dice mode: sum both dice
+                if (secondDice != null)
+                {
+                    diceSum = firstDice.CurrentValue + secondDice.CurrentValue;
+                    
+                    // Display the dice sum prominently
+                    string message = $"=== DICE ROLL RESULT ===\n" +
+                                   $"First Dice: {firstDice.CurrentValue}\n" +
+                                   $"Second Dice: {secondDice.CurrentValue}\n" +
+                                   $"TOTAL SUM: {diceSum}\n" +
+                                   $"========================";
+                    
+                    Debug.Log(message);
+                }
+                else
+                {
+                    Debug.LogWarning("Second dice is null in two dice mode!");
+                    isProcessingDiceResult = false;
+                    yield break;
+                }
+            }
             
-            // Display the dice sum prominently
-            string message = $"=== DICE ROLL RESULT ===\n" +
-                           $"First Dice: {firstDice.CurrentValue}\n" +
-                           $"Second Dice: {secondDice.CurrentValue}\n" +
-                           $"TOTAL SUM: {diceSum}\n" +
-                           $"========================";
-            
-            Debug.Log(message);
             DisplayDiceSum();
             
             // Move dice back to their spawners
@@ -354,6 +490,9 @@ public class GameManager : MonoBehaviour
                 Destroy(secondDice.gameObject);
                 secondDice = null;
             }
+            
+            // Clear one dice flag after using it (player will clear it after movement)
+            // The flag will be cleared in PlayerController after Fortune Road sequence completes
             
             // Determine movement steps: use fixed value if debugging, otherwise use dice sum
             int movementSteps = IsDebugging ? debugFixedSteps : diceSum;
@@ -387,24 +526,30 @@ public class GameManager : MonoBehaviour
         float moveDuration = 0.5f; // Duration for moving dice back
         float elapsedTime = 0f;
         
+        // Check if we're using one dice mode
+        bool useOneDice = player != null && player.ShouldUseOneDice;
+        
         Vector3 firstDiceStartPos = firstDice.transform.position;
-        Vector3 firstDiceTargetPos = firstSpawner != null ? firstSpawner.position : firstDiceStartPos;
+        Vector3 firstDiceTargetPos = useOneDice && oneDiceSpawner != null 
+            ? oneDiceSpawner.position 
+            : (firstSpawner != null ? firstSpawner.position : firstDiceStartPos);
         Quaternion firstDiceStartRot = firstDice.transform.rotation;
         
-        Vector3 secondDiceStartPos = secondDice.transform.position;
+        Vector3 secondDiceStartPos = secondDice != null ? secondDice.transform.position : Vector3.zero;
         Vector3 secondDiceTargetPos = secondSpawner != null ? secondSpawner.position : secondDiceStartPos;
-        Quaternion secondDiceStartRot = secondDice.transform.rotation;
+        Quaternion secondDiceStartRot = secondDice != null ? secondDice.transform.rotation : Quaternion.identity;
         
         // Calculate target rotations to show the rolled values on top
         // Get the base spawner rotations
-        Quaternion firstSpawnerBaseRot = firstSpawner != null ? firstSpawner.rotation : Quaternion.identity;
+        Transform firstTargetSpawner = useOneDice && oneDiceSpawner != null ? oneDiceSpawner : firstSpawner;
+        Quaternion firstSpawnerBaseRot = firstTargetSpawner != null ? firstTargetSpawner.rotation : Quaternion.identity;
         Quaternion secondSpawnerBaseRot = secondSpawner != null ? secondSpawner.rotation : Quaternion.identity;
         
         // Calculate rotation needed to show first dice value on top
         Quaternion firstDiceValueRot = firstDice != null ? firstDice.GetRotationForValueOnTop(firstDice.CurrentValue) : Quaternion.identity;
         Quaternion firstDiceTargetRot = firstSpawnerBaseRot * firstDiceValueRot;
         
-        // Calculate rotation needed to show second dice value on top
+        // Calculate rotation needed to show second dice value on top (only if using two dice)
         Quaternion secondDiceValueRot = secondDice != null ? secondDice.GetRotationForValueOnTop(secondDice.CurrentValue) : Quaternion.identity;
         Quaternion secondDiceTargetRot = secondSpawnerBaseRot * secondDiceValueRot;
         
@@ -439,8 +584,8 @@ public class GameManager : MonoBehaviour
                 firstDice.transform.rotation = Quaternion.Lerp(firstDiceStartRot, firstDiceTargetRot, curve);
             }
             
-            // Move second dice
-            if (secondDice != null)
+            // Move second dice (only if using two dice mode)
+            if (!useOneDice && secondDice != null)
             {
                 secondDice.transform.position = Vector3.Lerp(secondDiceStartPos, secondDiceTargetPos, curve);
                 secondDice.transform.rotation = Quaternion.Lerp(secondDiceStartRot, secondDiceTargetRot, curve);
@@ -515,13 +660,29 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void DisplayDiceSum()
     {
-        if (firstDice != null && secondDice != null)
+        bool useOneDice = player != null && player.ShouldUseOneDice;
+        
+        if (firstDice != null)
         {
-            string status = $"Current Dice Status:\n" +
-                          $"First Dice Value: {firstDice.CurrentValue}\n" +
-                          $"Second Dice Value: {secondDice.CurrentValue}\n" +
-                          $"Total Sum: {diceSum}";
-            Debug.Log(status);
+            if (useOneDice)
+            {
+                string status = $"Current Dice Status (One Dice Mode):\n" +
+                              $"Dice Value: {firstDice.CurrentValue}\n" +
+                              $"Total Sum: {diceSum}";
+                Debug.Log(status);
+            }
+            else if (secondDice != null)
+            {
+                string status = $"Current Dice Status:\n" +
+                              $"First Dice Value: {firstDice.CurrentValue}\n" +
+                              $"Second Dice Value: {secondDice.CurrentValue}\n" +
+                              $"Total Sum: {diceSum}";
+                Debug.Log(status);
+            }
+            else
+            {
+                Debug.LogWarning("Second dice not found in two dice mode! Cannot display dice sum.");
+            }
         }
         else
         {
