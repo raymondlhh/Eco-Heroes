@@ -232,7 +232,7 @@ MonoBehaviour:
   oneDiceSpawner: {fileID: 1225757851}
   dicePrefab: {fileID: 512676549986405767, guid: 133e4974bd8608147bcc3880ae313a26, type: 3}
   diceCheckInterval: 2
-  IsDebugging: 1
+  IsDebugging: 0
   debugFixedSteps: 32
   player: {fileID: 1751012035}
   cardsManager: {fileID: 324961890}

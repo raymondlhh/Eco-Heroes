@@ -472,7 +472,11 @@ public class GameManager : MonoBehaviour
             
             DisplayDiceSum();
             
-            // Move dice back to their spawners
+            // Determine movement steps: use fixed value if debugging, otherwise use dice sum
+            int movementSteps = IsDebugging ? debugFixedSteps : diceSum;
+            
+            // Always show dice: move them back to spawners, wait, then destroy
+            // Move dice back to their spawners and show them
             yield return StartCoroutine(MoveDiceToSpawners());
             
             // Wait 2 seconds to show the dice numbers
@@ -491,11 +495,14 @@ public class GameManager : MonoBehaviour
                 secondDice = null;
             }
             
-            // Clear one dice flag after using it (player will clear it after movement)
-            // The flag will be cleared in PlayerController after Fortune Road sequence completes
-            
-            // Determine movement steps: use fixed value if debugging, otherwise use dice sum
-            int movementSteps = IsDebugging ? debugFixedSteps : diceSum;
+            // Clear one dice flag immediately after using it, so next roll will be two dice
+            if (useOneDice && player != null)
+            {
+                // Clear the flag through a public method or directly if accessible
+                // We'll need to add a method to PlayerController to clear this flag
+                player.ClearOneDiceFlag();
+                Debug.Log("One dice flag cleared. Next roll will use two dice.");
+            }
             
             // Log debug mode status if enabled
             if (IsDebugging)
@@ -634,15 +641,28 @@ public class GameManager : MonoBehaviour
     
     private void OnPlayerMovementComplete()
     {
-        // Check if there is a card animating
-        if (cardsManager != null && cardsManager.IsCardAnimating)
+        // Get the current waypoint name to check if a card will be shown
+        string currentWaypointName = player != null ? player.GetCurrentWaypointName() : string.Empty;
+        bool willShowCard = false;
+        
+        // Check if a card will be spawned for this path
+        if (cardsManager != null && !string.IsNullOrEmpty(currentWaypointName))
+        {
+            willShowCard = cardsManager.WillSpawnCardForPath(currentWaypointName);
+        }
+        
+        // Check if there is a card currently animating
+        bool isCardAnimating = cardsManager != null && cardsManager.IsCardAnimating;
+        
+        // If a card will be shown or is currently animating, wait for it to be destroyed before spawning dice
+        if (willShowCard || isCardAnimating)
         {
             // Wait for card to be destroyed, then spawn dice
             StartCoroutine(WaitForCardAndRespawnDice());
         }
         else
         {
-            // No card, spawn dice immediately
+            // No card on this path, spawn dice immediately
             SpawnDice();
             isProcessingDiceResult = false;
         }
@@ -650,11 +670,24 @@ public class GameManager : MonoBehaviour
     
     private IEnumerator WaitForCardAndRespawnDice()
     {
-        // Wait until card animation is complete (card is destroyed)
+        // First, wait for the card to start animating (in case it hasn't started yet)
+        // Give it a few frames for the card to be spawned and start animating
+        int maxWaitFrames = 10;
+        int framesWaited = 0;
+        while (cardsManager != null && !cardsManager.IsCardAnimating && framesWaited < maxWaitFrames)
+        {
+            yield return null;
+            framesWaited++;
+        }
+        
+        // Now wait until card animation is complete (card is destroyed)
         while (cardsManager != null && cardsManager.IsCardAnimating)
         {
             yield return null;
         }
+        
+        // Add a small delay after card is destroyed to ensure it's completely gone
+        yield return new WaitForSeconds(0.1f);
         
         // Card has been destroyed, spawn dice back
         SpawnDice();

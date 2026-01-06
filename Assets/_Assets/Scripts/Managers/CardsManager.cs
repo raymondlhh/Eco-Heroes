@@ -32,6 +32,20 @@ public class CardsManager : MonoBehaviour
     
     public bool IsCardAnimating => isCardAnimating;
     
+    /// <summary>
+    /// Checks if a card will be spawned for the given path name
+    /// </summary>
+    public bool WillSpawnCardForPath(string pathName)
+    {
+        if (string.IsNullOrEmpty(pathName))
+        {
+            return false;
+        }
+        
+        var (cardPrefab, _) = GetCardPrefabForPath(pathName);
+        return cardPrefab != null;
+    }
+    
     void Start()
     {
         // Find player if not assigned
