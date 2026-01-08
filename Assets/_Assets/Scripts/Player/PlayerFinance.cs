@@ -1,11 +1,27 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+
+[System.Serializable]
+public class FinancialItem
+{
+    public string details;
+    public float amount;
+    
+    public FinancialItem(string details, float amount)
+    {
+        this.details = details;
+        this.amount = amount;
+    }
+}
 
 public class PlayerFinance : MonoBehaviour
 {
-    [Header("Financial Data")]
-    [SerializeField] private float totalIncome = 0f;
-    [SerializeField] private float totalExpenses = 0f;
+    [Header("Income Items")]
+    [SerializeField] private List<FinancialItem> incomeItems = new List<FinancialItem>();
+    
+    [Header("Expense Items")]
+    [SerializeField] private List<FinancialItem> expenseItems = new List<FinancialItem>();
     
     [Header("Purchased Items")]
     [SerializeField] private List<string> realEstateItems = new List<string>();
@@ -14,20 +30,25 @@ public class PlayerFinance : MonoBehaviour
     [SerializeField] private List<string> unitTrustItems = new List<string>();
     [SerializeField] private List<string> insuranceItems = new List<string>();
     
-    // Public properties
+    // Public properties - Auto-calculated from items
     public float TotalIncome 
     { 
-        get { return totalIncome; } 
-        private set { totalIncome = value; }
+        get { return incomeItems != null ? incomeItems.Sum(item => item.amount) : 0f; }
     }
     
     public float TotalExpenses 
     { 
-        get { return totalExpenses; } 
-        private set { totalExpenses = value; }
+        get { return expenseItems != null ? expenseItems.Sum(item => item.amount) : 0f; }
     }
     
     public float CurrentPayday => TotalIncome - TotalExpenses;
+    
+    // Event that fires when income or expenses change
+    public System.Action<float> OnPaydayChanged;
+    
+    // Read-only access to income and expense lists
+    public IReadOnlyList<FinancialItem> IncomeItems => incomeItems;
+    public IReadOnlyList<FinancialItem> ExpenseItems => expenseItems;
     
     // Read-only access to item lists
     public IReadOnlyList<string> RealEstateItems => realEstateItems;
@@ -39,6 +60,8 @@ public class PlayerFinance : MonoBehaviour
     void Start()
     {
         // Initialize with default values if needed
+        if (incomeItems == null) incomeItems = new List<FinancialItem>();
+        if (expenseItems == null) expenseItems = new List<FinancialItem>();
         if (realEstateItems == null) realEstateItems = new List<string>();
         if (businessItems == null) businessItems = new List<string>();
         if (stockItems == null) stockItems = new List<string>();
@@ -47,27 +70,112 @@ public class PlayerFinance : MonoBehaviour
     }
     
     /// <summary>
-    /// Adds income to the player's total income
+    /// Adds an income item with details and amount
     /// </summary>
-    public void AddIncome(float amount)
+    public void AddIncomeItem(string details, float amount)
     {
-        if (amount > 0)
+        if (!string.IsNullOrEmpty(details) && amount > 0)
         {
-            TotalIncome += amount;
-            Debug.Log($"Income added: {amount}. Total Income: {TotalIncome}");
+            incomeItems.Add(new FinancialItem(details, amount));
+            Debug.Log($"Income item added: {details} - {amount}. Total Income: {TotalIncome}");
+            OnPaydayChanged?.Invoke(CurrentPayday);
         }
     }
     
     /// <summary>
-    /// Adds expense to the player's total expenses
+    /// Adds an expense item with details and amount
     /// </summary>
+    public void AddExpenseItem(string details, float amount)
+    {
+        if (!string.IsNullOrEmpty(details) && amount > 0)
+        {
+            expenseItems.Add(new FinancialItem(details, amount));
+            Debug.Log($"Expense item added: {details} - {amount}. Total Expenses: {TotalExpenses}");
+            OnPaydayChanged?.Invoke(CurrentPayday);
+        }
+    }
+    
+    /// <summary>
+    /// Removes an income item by details (removes first matching item)
+    /// </summary>
+    public bool RemoveIncomeItem(string details)
+    {
+        var item = incomeItems.FirstOrDefault(i => i.details == details);
+        if (item != null)
+        {
+            incomeItems.Remove(item);
+            Debug.Log($"Income item removed: {details}. Total Income: {TotalIncome}");
+            OnPaydayChanged?.Invoke(CurrentPayday);
+            return true;
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// Removes an expense item by details (removes first matching item)
+    /// </summary>
+    public bool RemoveExpenseItem(string details)
+    {
+        var item = expenseItems.FirstOrDefault(i => i.details == details);
+        if (item != null)
+        {
+            expenseItems.Remove(item);
+            Debug.Log($"Expense item removed: {details}. Total Expenses: {TotalExpenses}");
+            OnPaydayChanged?.Invoke(CurrentPayday);
+            return true;
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// Updates an income item's amount by details (updates first matching item)
+    /// </summary>
+    public bool UpdateIncomeItem(string details, float newAmount)
+    {
+        var item = incomeItems.FirstOrDefault(i => i.details == details);
+        if (item != null && newAmount > 0)
+        {
+            item.amount = newAmount;
+            Debug.Log($"Income item updated: {details} - {newAmount}. Total Income: {TotalIncome}");
+            OnPaydayChanged?.Invoke(CurrentPayday);
+            return true;
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// Updates an expense item's amount by details (updates first matching item)
+    /// </summary>
+    public bool UpdateExpenseItem(string details, float newAmount)
+    {
+        var item = expenseItems.FirstOrDefault(i => i.details == details);
+        if (item != null && newAmount > 0)
+        {
+            item.amount = newAmount;
+            Debug.Log($"Expense item updated: {details} - {newAmount}. Total Expenses: {TotalExpenses}");
+            OnPaydayChanged?.Invoke(CurrentPayday);
+            return true;
+        }
+        return false;
+    }
+    
+    // Legacy methods for backward compatibility
+    /// <summary>
+    /// Adds income to the player's total income (legacy method - creates item with "Income" as details)
+    /// </summary>
+    [System.Obsolete("Use AddIncomeItem(string details, float amount) instead")]
+    public void AddIncome(float amount)
+    {
+        AddIncomeItem("Income", amount);
+    }
+    
+    /// <summary>
+    /// Adds expense to the player's total expenses (legacy method - creates item with "Expense" as details)
+    /// </summary>
+    [System.Obsolete("Use AddExpenseItem(string details, float amount) instead")]
     public void AddExpense(float amount)
     {
-        if (amount > 0)
-        {
-            TotalExpenses += amount;
-            Debug.Log($"Expense added: {amount}. Total Expenses: {TotalExpenses}");
-        }
+        AddExpenseItem("Expense", amount);
     }
     
     /// <summary>
@@ -200,13 +308,14 @@ public class PlayerFinance : MonoBehaviour
     /// </summary>
     public void ResetFinance()
     {
-        TotalIncome = 0f;
-        TotalExpenses = 0f;
+        incomeItems.Clear();
+        expenseItems.Clear();
         realEstateItems.Clear();
         businessItems.Clear();
         stockItems.Clear();
         unitTrustItems.Clear();
         insuranceItems.Clear();
+        OnPaydayChanged?.Invoke(CurrentPayday);
         Debug.Log("Player finance data reset.");
     }
     
@@ -215,13 +324,28 @@ public class PlayerFinance : MonoBehaviour
     /// </summary>
     public string GetFinanceSummary()
     {
-        return $"Total Income: {TotalIncome:F2}\n" +
-               $"Total Expenses: {TotalExpenses:F2}\n" +
-               $"Current Payday: {CurrentPayday:F2}\n" +
-               $"Real Estate Items: {realEstateItems.Count}\n" +
-               $"Business Items: {businessItems.Count}\n" +
-               $"Stock Items: {stockItems.Count}\n" +
-               $"Unit Trust Items: {unitTrustItems.Count}\n" +
-               $"Insurance Items: {insuranceItems.Count}";
+        string summary = $"Total Income: {TotalIncome:F2}\n" +
+                         $"Total Expenses: {TotalExpenses:F2}\n" +
+                         $"Current Payday: {CurrentPayday:F2}\n\n";
+        
+        summary += "Income Items:\n";
+        foreach (var item in incomeItems)
+        {
+            summary += $"  - {item.details}: {item.amount:F2}\n";
+        }
+        
+        summary += "\nExpense Items:\n";
+        foreach (var item in expenseItems)
+        {
+            summary += $"  - {item.details}: {item.amount:F2}\n";
+        }
+        
+        summary += $"\nReal Estate Items: {realEstateItems.Count}\n" +
+                   $"Business Items: {businessItems.Count}\n" +
+                   $"Stock Items: {stockItems.Count}\n" +
+                   $"Unit Trust Items: {unitTrustItems.Count}\n" +
+                   $"Insurance Items: {insuranceItems.Count}";
+        
+        return summary;
     }
 }

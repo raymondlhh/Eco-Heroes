@@ -10,8 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2929397181292888531}
   - component: {fileID: 8524865174168533033}
+  - component: {fileID: 2262745029103600224}
   m_Layer: 0
-  m_Name: Player
+  m_Name: PlayerModel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jumpHeight: 1
-  jumpDuration: 0.5
+  jumpDuration: 0.2
   pathWaypoints:
   - {fileID: 0}
   - {fileID: 0}
@@ -78,6 +79,46 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  fortuneRoadWaypoints:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  path39Waypoint: {fileID: 0}
+--- !u!114 &2262745029103600224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98607575583157904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86a79ed66531b594580eff242b1e646b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  totalIncome: 0
+  totalExpenses: 0
+  realEstateItems: []
+  businessItems: []
+  stockItems: []
+  unitTrustItems: []
+  insuranceItems: []
 --- !u!1001 &4381644586564009374
 PrefabInstance:
   m_ObjectHideFlags: 0
