@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2929397181292888531}
   - component: {fileID: 8524865174168533033}
   - component: {fileID: 2262745029103600224}
+  - component: {fileID: 1643505386277528714}
   m_Layer: 0
   m_Name: PlayerModel
   m_TagString: Untagged
@@ -112,13 +113,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86a79ed66531b594580eff242b1e646b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalIncome: 0
-  totalExpenses: 0
-  realEstateItems: []
-  businessItems: []
-  stockItems: []
-  unitTrustItems: []
-  insuranceItems: []
+  incomeItems:
+  - details: Salary
+    amount: 3500
+  expenseItems:
+  - details: Food
+    amount: 800
+  - details: Car Payment
+    amount: 500
+  - details: Petrol
+    amount: 200
+  - details: Internet
+    amount: 200
+  - details: College Loan
+    amount: 400
+  - details: Entertainment
+    amount: 100
+  initialCash: 6600
+--- !u!114 &1643505386277528714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98607575583157904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9fb460987241a9419623534b49f3d04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentText: {fileID: 0}
+  playerFinance: {fileID: 2262745029103600224}
+  paydayFormat: ${0:F0}
 --- !u!1001 &4381644586564009374
 PrefabInstance:
   m_ObjectHideFlags: 0

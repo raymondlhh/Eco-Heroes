@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class ForSaleUIController : MonoBehaviour
+public class RealEstateUI : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private GameObject forSaleUIPanel;

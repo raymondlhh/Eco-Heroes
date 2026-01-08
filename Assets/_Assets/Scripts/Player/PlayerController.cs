@@ -25,9 +25,13 @@ public class PlayerController : MonoBehaviour
     private int savedNormalPathIndex = -1; // Store the normal path index to resume after Fortune Road
     private bool shouldEnterFortuneRoad = false; // Flag to indicate next movement should go through Fortune Road
     private bool shouldUseOneDice = false; // Flag to indicate next dice roll should use only one dice
+    private bool passedPath01Start = false; // Flag to track if player passed through Path01_Start during movement
     
     // Event for when player movement completes
     public System.Action OnMovementComplete;
+    
+    // Event for when player passes through Path01_Start
+    public System.Action OnPassedPath01Start;
     
     public bool IsMoving => isMoving;
     public int CurrentPathIndex => currentPathIndex;
@@ -121,6 +125,7 @@ public class PlayerController : MonoBehaviour
     private IEnumerator MoveToWaypoints(int steps)
     {
         isMoving = true;
+        passedPath01Start = false; // Reset flag at start of movement
         
         // Check if we should enter Fortune Road sequence at the start of this movement
         if (shouldEnterFortuneRoad && !isInFortuneRoadSequence)
@@ -198,6 +203,9 @@ public class PlayerController : MonoBehaviour
                             
                             Transform remainingWaypoint = pathWaypoints[currentPathIndex];
                             Vector3 remainingPosition = remainingWaypoint.position;
+                            
+                            // Check if this waypoint is Path01_Start (or Path001_Start)
+                            CheckAndTriggerPath01Start(remainingWaypoint);
                             
                             // Jump to the waypoint (sound plays during jump)
                             yield return StartCoroutine(JumpToPosition(remainingPosition));
@@ -339,6 +347,9 @@ public class PlayerController : MonoBehaviour
                             Transform remainingWaypoint = pathWaypoints[currentPathIndex];
                             Vector3 remainingPosition = remainingWaypoint.position;
                             
+                            // Check if this waypoint is Path01_Start (or Path001_Start)
+                            CheckAndTriggerPath01Start(remainingWaypoint);
+                            
                             // Jump to the waypoint (sound plays during jump)
                             yield return StartCoroutine(JumpToPosition(remainingPosition));
                         }
@@ -378,6 +389,9 @@ public class PlayerController : MonoBehaviour
                 
                 Transform normalWaypoint = pathWaypoints[currentPathIndex];
                 Vector3 normalPosition = normalWaypoint.position;
+                
+                // Check if this waypoint is Path01_Start (or Path001_Start)
+                CheckAndTriggerPath01Start(normalWaypoint);
                 
                 // Jump to the waypoint (sound plays during jump)
                 yield return StartCoroutine(JumpToPosition(normalPosition));
@@ -468,6 +482,23 @@ public class PlayerController : MonoBehaviour
             return waypointName.Contains("FortuneRoad", System.StringComparison.OrdinalIgnoreCase);
         }
         return false;
+    }
+    
+    /// <summary>
+    /// Checks if a waypoint is Path01_Start and triggers the event if not already triggered
+    /// </summary>
+    private void CheckAndTriggerPath01Start(Transform waypoint)
+    {
+        if (waypoint != null && !passedPath01Start)
+        {
+            string waypointName = waypoint.name;
+            if (waypointName == "Path01_Start" || waypointName == "Path001_Start")
+            {
+                passedPath01Start = true;
+                OnPassedPath01Start?.Invoke();
+                Debug.Log($"Player passed through {waypointName} during movement!");
+            }
+        }
     }
     
     /// <summary>

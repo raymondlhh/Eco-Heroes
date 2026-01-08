@@ -31,7 +31,7 @@ public class CardsManager : MonoBehaviour
     
     [Header("Real Estate Settings")]
     [SerializeField] private RealEstateData realEstateData;
-    [SerializeField] private ForSaleUIController forSaleUIController;
+    [SerializeField] private RealEstateUI forSaleUIController;
     
     private bool isCardAnimating = false;
     private CardController currentRealEstateCard;
@@ -79,12 +79,12 @@ public class CardsManager : MonoBehaviour
             GameObject forSaleUIObj = GameObject.Find("ForSaleUI");
             if (forSaleUIObj != null)
             {
-                forSaleUIController = forSaleUIObj.GetComponent<ForSaleUIController>();
+                forSaleUIController = forSaleUIObj.GetComponent<RealEstateUI>();
             }
             
             if (forSaleUIController == null)
             {
-                forSaleUIController = FindAnyObjectByType<ForSaleUIController>();
+                forSaleUIController = FindAnyObjectByType<RealEstateUI>();
             }
         }
         

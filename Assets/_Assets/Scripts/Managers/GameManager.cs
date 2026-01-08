@@ -98,6 +98,7 @@ public class GameManager : MonoBehaviour
         if (player != null)
         {
             player.OnMovementComplete += OnPlayerMovementComplete;
+            player.OnPassedPath01Start += OnPlayerPassedPath01Start;
         }
         
         // Find and hide MiniGamesUI at start
@@ -657,24 +658,26 @@ public class GameManager : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Called when player passes through Path01_Start during movement
+    /// </summary>
+    private void OnPlayerPassedPath01Start()
+    {
+        if (playerFinance != null)
+        {
+            playerFinance.AddPaydayToCash();
+            Debug.Log($"Player passed through Path01_Start! Added CurrentPayday ({playerFinance.CurrentPayday}) to cash. New Cash: {playerFinance.CurrentCash}");
+        }
+        else
+        {
+            Debug.LogWarning("PlayerFinance not found! Cannot add payday to cash.");
+        }
+    }
+    
     private void OnPlayerMovementComplete()
     {
         // Get the current waypoint name to check if a card will be shown
         string currentWaypointName = player != null ? player.GetCurrentWaypointName() : string.Empty;
-        
-        // Check if player passed Path01_Start and add CurrentPayday to cash
-        if (!string.IsNullOrEmpty(currentWaypointName) && currentWaypointName == "Path01_Start")
-        {
-            if (playerFinance != null)
-            {
-                playerFinance.AddPaydayToCash();
-                Debug.Log($"Player passed Path01_Start! Added CurrentPayday to cash.");
-            }
-            else
-            {
-                Debug.LogWarning("PlayerFinance not found! Cannot add payday to cash.");
-            }
-        }
         
         bool willShowCard = false;
         
@@ -802,6 +805,7 @@ public class GameManager : MonoBehaviour
         if (player != null)
         {
             player.OnMovementComplete -= OnPlayerMovementComplete;
+            player.OnPassedPath01Start -= OnPlayerPassedPath01Start;
         }
     }
 }

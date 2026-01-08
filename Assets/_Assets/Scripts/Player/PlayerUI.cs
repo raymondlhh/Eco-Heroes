@@ -4,40 +4,40 @@ using TMPro;
 public class PlayerUI : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private TextMeshProUGUI currentText;
+    [SerializeField] private TextMeshProUGUI cashText;
     
     [Header("Player Finance Reference")]
     [SerializeField] private PlayerFinance playerFinance;
     
     [Header("Display Settings")]
-    [Tooltip("Format string for displaying payday. {0} will be replaced with the payday value.")]
-    [SerializeField] private string paydayFormat = "RM{0:F0}";
+    [Tooltip("Format string for displaying cash. {0} will be replaced with the cash value.")]
+    [SerializeField] private string cashFormat = "RM{0:F0}";
     
     private void Start()
     {
-        // Find CurrentText if not assigned
-        if (currentText == null)
+        // Find CashText if not assigned
+        if (cashText == null)
         {
             // Try to find it in children
-            currentText = GetComponentInChildren<TextMeshProUGUI>();
+            cashText = GetComponentInChildren<TextMeshProUGUI>();
             
-            // If still null, try to find by name
-            if (currentText == null)
+            // If still null, try to find by name (CashText is in LowerBanner)
+            if (cashText == null)
             {
-                Transform currentTextTransform = transform.Find("LowerBanner/CurrentText");
-                if (currentTextTransform != null)
+                Transform cashTextTransform = transform.Find("LowerBanner/CashText");
+                if (cashTextTransform != null)
                 {
-                    currentText = currentTextTransform.GetComponent<TextMeshProUGUI>();
+                    cashText = cashTextTransform.GetComponent<TextMeshProUGUI>();
                 }
             }
             
             // Last resort: search by name in scene
-            if (currentText == null)
+            if (cashText == null)
             {
-                GameObject currentTextObj = GameObject.Find("CurrentText");
-                if (currentTextObj != null)
+                GameObject cashTextObj = GameObject.Find("CashText");
+                if (cashTextObj != null)
                 {
-                    currentText = currentTextObj.GetComponent<TextMeshProUGUI>();
+                    cashText = cashTextObj.GetComponent<TextMeshProUGUI>();
                 }
             }
         }
@@ -65,43 +65,43 @@ public class PlayerUI : MonoBehaviour
             }
         }
         
-        // Subscribe to payday changes
+        // Subscribe to cash changes (not payday changes)
         if (playerFinance != null)
         {
-            playerFinance.OnPaydayChanged += UpdateCurrentText;
-            // Update immediately with current value
-            UpdateCurrentText(playerFinance.CurrentPayday);
+            playerFinance.OnCashChanged += UpdateCashText;
+            // Update immediately with current cash value (which starts as initialCash)
+            UpdateCashText(playerFinance.CurrentCash);
         }
         else
         {
-            Debug.LogWarning("PlayerUIController: PlayerFinance not found! CurrentText will not be updated.");
+            Debug.LogWarning("PlayerUI: PlayerFinance not found! CashText will not be updated.");
         }
     }
     
-    private void UpdateCurrentText(float payday)
+    private void UpdateCashText(float cash)
     {
-        if (currentText != null)
+        if (cashText != null)
         {
-            currentText.text = string.Format(paydayFormat, payday);
+            cashText.text = string.Format(cashFormat, cash);
         }
         else
         {
-            Debug.LogWarning("PlayerUIController: CurrentText is null! Cannot update display.");
+            Debug.LogWarning("PlayerUI: CashText is null! Cannot update display.");
         }
     }
     
     /// <summary>
-    /// Manually refreshes the CurrentText display with the current payday value
+    /// Manually refreshes the CashText display with the current cash value
     /// </summary>
     public void RefreshDisplay()
     {
         if (playerFinance != null)
         {
-            UpdateCurrentText(playerFinance.CurrentPayday);
+            UpdateCashText(playerFinance.CurrentCash);
         }
         else
         {
-            Debug.LogWarning("PlayerUIController: PlayerFinance is null! Cannot refresh display.");
+            Debug.LogWarning("PlayerUI: PlayerFinance is null! Cannot refresh display.");
         }
     }
     
@@ -110,7 +110,7 @@ public class PlayerUI : MonoBehaviour
         // Unsubscribe from event to prevent memory leaks
         if (playerFinance != null)
         {
-            playerFinance.OnPaydayChanged -= UpdateCurrentText;
+            playerFinance.OnCashChanged -= UpdateCashText;
         }
     }
 }

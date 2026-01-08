@@ -23,6 +23,14 @@ public class PlayerFinance : MonoBehaviour
     [Header("Expense Items")]
     [SerializeField] private List<FinancialItem> expenseItems = new List<FinancialItem>();
     
+    [Header("Current Payday (Read-Only)")]
+    [Tooltip("Current payday value (Income - Expenses). Updated in real-time.")]
+    [SerializeField] private float currentPaydayDisplay = 0f;
+    
+    [Header("Current Cash (Read-Only)")]
+    [Tooltip("Current cash amount. Updated in real-time.")]
+    [SerializeField] private float currentCashDisplay = 0f;
+    
     [Header("Cash Settings")]
     [Tooltip("Initial cash amount when game starts")]
     [SerializeField] private float initialCash = 0f;
@@ -60,7 +68,34 @@ public class PlayerFinance : MonoBehaviour
         
         // Initialize cash with initial value
         currentCash = initialCash;
+        UpdateCurrentCashDisplay();
         OnCashChanged?.Invoke(currentCash);
+        
+        // Initialize current payday display
+        UpdateCurrentPaydayDisplay();
+    }
+    
+    void Update()
+    {
+        // Update the display fields in real-time so they're visible in the Inspector
+        UpdateCurrentPaydayDisplay();
+        UpdateCurrentCashDisplay();
+    }
+    
+    /// <summary>
+    /// Updates the current payday display field for Inspector visibility
+    /// </summary>
+    private void UpdateCurrentPaydayDisplay()
+    {
+        currentPaydayDisplay = CurrentPayday;
+    }
+    
+    /// <summary>
+    /// Updates the current cash display field for Inspector visibility
+    /// </summary>
+    private void UpdateCurrentCashDisplay()
+    {
+        currentCashDisplay = currentCash;
     }
     
     /// <summary>
@@ -72,6 +107,7 @@ public class PlayerFinance : MonoBehaviour
         {
             incomeItems.Add(new FinancialItem(details, amount));
             Debug.Log($"Income item added: {details} - {amount}. Total Income: {TotalIncome}");
+            UpdateCurrentPaydayDisplay();
             OnPaydayChanged?.Invoke(CurrentPayday);
         }
     }
@@ -85,6 +121,7 @@ public class PlayerFinance : MonoBehaviour
         {
             expenseItems.Add(new FinancialItem(details, amount));
             Debug.Log($"Expense item added: {details} - {amount}. Total Expenses: {TotalExpenses}");
+            UpdateCurrentPaydayDisplay();
             OnPaydayChanged?.Invoke(CurrentPayday);
         }
     }
@@ -99,6 +136,7 @@ public class PlayerFinance : MonoBehaviour
         {
             incomeItems.Remove(item);
             Debug.Log($"Income item removed: {details}. Total Income: {TotalIncome}");
+            UpdateCurrentPaydayDisplay();
             OnPaydayChanged?.Invoke(CurrentPayday);
             return true;
         }
@@ -115,6 +153,7 @@ public class PlayerFinance : MonoBehaviour
         {
             expenseItems.Remove(item);
             Debug.Log($"Expense item removed: {details}. Total Expenses: {TotalExpenses}");
+            UpdateCurrentPaydayDisplay();
             OnPaydayChanged?.Invoke(CurrentPayday);
             return true;
         }
@@ -131,6 +170,7 @@ public class PlayerFinance : MonoBehaviour
         {
             item.amount = newAmount;
             Debug.Log($"Income item updated: {details} - {newAmount}. Total Income: {TotalIncome}");
+            UpdateCurrentPaydayDisplay();
             OnPaydayChanged?.Invoke(CurrentPayday);
             return true;
         }
@@ -147,6 +187,7 @@ public class PlayerFinance : MonoBehaviour
         {
             item.amount = newAmount;
             Debug.Log($"Expense item updated: {details} - {newAmount}. Total Expenses: {TotalExpenses}");
+            UpdateCurrentPaydayDisplay();
             OnPaydayChanged?.Invoke(CurrentPayday);
             return true;
         }
@@ -180,6 +221,7 @@ public class PlayerFinance : MonoBehaviour
         if (amount > 0)
         {
             currentCash += amount;
+            UpdateCurrentCashDisplay();
             Debug.Log($"Cash added: {amount}. Current Cash: {currentCash}");
             OnCashChanged?.Invoke(currentCash);
         }
@@ -195,6 +237,7 @@ public class PlayerFinance : MonoBehaviour
             if (currentCash >= amount)
             {
                 currentCash -= amount;
+                UpdateCurrentCashDisplay();
                 Debug.Log($"Cash subtracted: {amount}. Current Cash: {currentCash}");
                 OnCashChanged?.Invoke(currentCash);
                 return true;
@@ -229,6 +272,8 @@ public class PlayerFinance : MonoBehaviour
         incomeItems.Clear();
         expenseItems.Clear();
         currentCash = initialCash;
+        UpdateCurrentPaydayDisplay();
+        UpdateCurrentCashDisplay();
         OnPaydayChanged?.Invoke(CurrentPayday);
         OnCashChanged?.Invoke(currentCash);
         Debug.Log("Player finance data reset.");
