@@ -32,7 +32,7 @@ public class GameManager : MonoBehaviour
     private int diceSum = 0;
     private bool isRolling = false;
     private float lastCheckTime = 0f;
-    private DebugManager keyboardManager;
+    private StockManager keyboardManager;
     private bool isProcessingDiceResult = false;
     
     public int DiceSum => diceSum;
@@ -74,7 +74,7 @@ public class GameManager : MonoBehaviour
         }
         
         // Find KeyboardManager to check MiniGameStockMarket status
-        keyboardManager = FindAnyObjectByType<DebugManager>();
+        keyboardManager = FindAnyObjectByType<StockManager>();
         
         // Subscribe to player movement complete event
         if (player != null)

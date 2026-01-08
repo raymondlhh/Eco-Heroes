@@ -27,7 +27,7 @@ public class CardsManager : MonoBehaviour
     [SerializeField] private PlayerController player;
     
     [Header("Debug Manager Reference")]
-    [SerializeField] private DebugManager debugManager;
+    [SerializeField] private StockManager debugManager;
     
     private bool isCardAnimating = false;
     
@@ -64,7 +64,7 @@ public class CardsManager : MonoBehaviour
         // Find DebugManager if not assigned
         if (debugManager == null)
         {
-            debugManager = FindAnyObjectByType<DebugManager>();
+            debugManager = FindAnyObjectByType<StockManager>();
         }
         
         // Subscribe to player movement complete event

@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using TMPro;
 
-public class DebugManager : MonoBehaviour
+public class StockManager : MonoBehaviour
 {
     [Header("MiniGame Settings")]
     [SerializeField] private GameObject miniGamesUI;
