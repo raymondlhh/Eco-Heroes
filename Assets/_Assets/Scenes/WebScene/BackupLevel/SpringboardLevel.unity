@@ -368,7 +368,7 @@ MonoBehaviour:
   oneDiceSpawner: {fileID: 1225757851}
   dicePrefab: {fileID: 512676549986405767, guid: 133e4974bd8608147bcc3880ae313a26, type: 3}
   diceCheckInterval: 0.5
-  IsDebugging: 1
+  IsDebugging: 0
   debugFixedSteps: 3
   playerManager: {fileID: 1152732730}
   cardsManager: {fileID: 324961890}
@@ -8219,7 +8219,7 @@ MonoBehaviour:
   - 6600
   - 6600
   - 6600
-  playerIsAI: 01010000
+  playerIsAI: 00010000
   playerPurchaseProbability:
   - 1
   - 1

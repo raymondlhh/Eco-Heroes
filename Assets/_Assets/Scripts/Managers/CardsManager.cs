@@ -56,6 +56,12 @@ public class CardsManager : MonoBehaviour
             return false;
         }
         
+        // Stocks paths should not spawn cards (they activate StockMarket instead)
+        if (pathName.Contains("Stocks", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        
         var (cardPrefab, _) = GetCardPrefabForPath(pathName);
         return cardPrefab != null;
     }
@@ -213,24 +219,45 @@ public class CardsManager : MonoBehaviour
         {
             string waypointName = currentPlayerCtrl.GetCurrentWaypointName();
             
-            // Check if path contains "Stocks" keyword and activate minigame
-            if (!string.IsNullOrEmpty(waypointName) && waypointName.Contains("Stocks", System.StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(waypointName))
             {
+                Debug.LogWarning("Waypoint name is empty! Cannot process path.");
+                return;
+            }
+            
+            // Check if path contains "Stocks" keyword and activate minigame
+            if (waypointName.Contains("Stocks", System.StringComparison.OrdinalIgnoreCase))
+            {
+                // Try to find StockManager if not already assigned
+                if (debugManager == null)
+                {
+                    debugManager = FindAnyObjectByType<StockManager>();
+                }
+                
                 if (debugManager != null)
                 {
                     debugManager.ActivateMiniGame();
+                    Debug.Log($"StockMarket activated for path: {waypointName}");
                 }
                 else
                 {
-                    Debug.LogWarning("DebugManager not found! Cannot activate minigame for Stocks path.");
+                    Debug.LogWarning($"StockManager not found! Cannot activate minigame for Stocks path: {waypointName}");
                 }
             }
             
-            SpawnCardForPath(waypointName);
+            // Only spawn card if one should be spawned for this path
+            if (WillSpawnCardForPath(waypointName))
+            {
+                SpawnCardForPath(waypointName);
+            }
+            else
+            {
+                Debug.Log($"No card will be spawned for path: {waypointName}");
+            }
         }
         else
         {
-            Debug.LogWarning("Current player controller is null! Cannot spawn card.");
+            Debug.LogWarning("Current player controller is null! Cannot process path.");
         }
     }
     
@@ -320,14 +347,29 @@ public class CardsManager : MonoBehaviour
     /// <summary>
     /// Gets the appropriate card prefab based on the path name
     /// Returns a tuple with the card prefab and a boolean indicating if it was randomly selected
+    /// Returns null if no card should be spawned for this path
     /// </summary>
     private (GameObject cardPrefab, bool isRandomSelection) GetCardPrefabForPath(string pathName)
     {
         // Normalize path name (remove spaces, handle case)
         string normalizedPath = pathName.Trim();
         
+        // Stocks paths should never spawn cards (they activate StockMarket instead)
+        if (normalizedPath.Contains("Stocks", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return (null, false);
+        }
+        
         // Extract category name from path format: "PathXX_Category" -> "Category"
         string categoryName = ExtractCategoryFromPath(normalizedPath);
+        
+        // If category name is empty or same as original path, it means the path doesn't follow the expected format
+        // Only proceed if we have a valid category name
+        if (string.IsNullOrEmpty(categoryName) || categoryName.Equals(normalizedPath, System.StringComparison.OrdinalIgnoreCase))
+        {
+            // Path doesn't match expected format "PathXX_Category", so no card should spawn
+            return (null, false);
+        }
         
         // Check if category name ends with digits (e.g., "Business01", "RealEstate02")
         // This indicates a specific card, not a category
@@ -376,48 +418,62 @@ public class CardsManager : MonoBehaviour
                     }
                 }
             }
+            
+            // No FortuneRoad card found, return null (don't spawn random card)
+            return (null, false);
         }
         
         // Check for category match (e.g., "Business", "Chance", "FixedIncome", etc.)
         // Handle different naming conventions
+        // IMPORTANT: Only match if the category name starts with a known category prefix
+        // This prevents random matching of unrelated paths
         GameObject randomCard = null;
+        bool isKnownCategory = false;
         
         if (categoryName.StartsWith("Business", System.StringComparison.OrdinalIgnoreCase))
         {
             randomCard = GetRandomCardFromArray(businessCards, "Business");
+            isKnownCategory = true;
         }
         else if (categoryName.StartsWith("Chance", System.StringComparison.OrdinalIgnoreCase))
         {
             randomCard = GetRandomCardFromArray(chanceCards, "Chance");
+            isKnownCategory = true;
         }
         else if (categoryName.StartsWith("MarketWatch", System.StringComparison.OrdinalIgnoreCase))
         {
             randomCard = GetRandomCardFromArray(marketWatchCards, "MarketWatch");
+            isKnownCategory = true;
         }
         else if (categoryName.StartsWith("RealEstate", System.StringComparison.OrdinalIgnoreCase))
         {
             randomCard = GetRandomCardFromArray(realEstateCards, "RealEstate");
+            isKnownCategory = true;
         }
         else if (categoryName.StartsWith("UnitTrustEquities", System.StringComparison.OrdinalIgnoreCase) || 
                  categoryName.StartsWith("MutualFundEquities", System.StringComparison.OrdinalIgnoreCase) ||
                  categoryName.StartsWith("Equities", System.StringComparison.OrdinalIgnoreCase))
         {
             randomCard = GetRandomCardFromArray(unitTrustEquitiesCards, "UnitTrustEquities");
+            isKnownCategory = true;
         }
         else if (categoryName.StartsWith("UnitTrustFixedIncome", System.StringComparison.OrdinalIgnoreCase) || 
                  categoryName.StartsWith("MutualFundFixedIncome", System.StringComparison.OrdinalIgnoreCase) ||
                  categoryName.StartsWith("FixedIncome", System.StringComparison.OrdinalIgnoreCase))
         {
             randomCard = GetRandomCardFromArray(unitTrustFixedIncomeCards, "UnitTrustFixedIncome");
+            isKnownCategory = true;
         }
         
-        if (randomCard != null)
+        // Only return a card if it's a known category and we found a valid card
+        if (isKnownCategory && randomCard != null)
         {
             // If the category name doesn't have a number, it's a random selection
             // If it has a number but no exact match was found, it's also random (fallback)
             return (randomCard, !isSpecificCard);
         }
         
+        // Unknown category or no card found - return null (don't spawn any card)
         return (null, false);
     }
     
