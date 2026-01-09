@@ -8258,6 +8258,11 @@ MonoBehaviour:
   - 1
   - 1
   - 1
+  playerItemMaterials:
+  - {fileID: 2100000, guid: 1799ebcb52e5e614fa17abaaf473dd34, type: 2}
+  - {fileID: 2100000, guid: 61bd828cf69549b44881fb2253a59478, type: 2}
+  - {fileID: 2100000, guid: 2c1cce4331aeeb14fbd21c6d251337dd, type: 2}
+  - {fileID: 2100000, guid: ba6ef56eb8d9f994baf3f59b9882171d, type: 2}
   playerNameTexts:
   - {fileID: 0}
   - {fileID: 0}

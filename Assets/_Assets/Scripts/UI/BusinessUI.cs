@@ -269,6 +269,37 @@ public class BusinessUI : MonoBehaviour
             playerItem = Instantiate(playerItemPrefab, targetPathTransform.position, targetPathTransform.rotation, targetPathTransform);
             playerItem.name = $"PlayerItem_{businessName}";
             Debug.Log($"Spawned PlayerItem at {targetPathTransform.name}");
+            
+            // Assign player material to PlayerItem's Mesh Renderer
+            if (playerManager != null && playerManager.CurrentPlayer != null)
+            {
+                Material playerMaterial = playerManager.GetPlayerMaterial(playerManager.CurrentPlayer);
+                if (playerMaterial != null)
+                {
+                    MeshRenderer meshRenderer = playerItem.GetComponent<MeshRenderer>();
+                    if (meshRenderer != null && meshRenderer.materials.Length > 0)
+                    {
+                        // Create a new materials array with the player's material
+                        Material[] materials = new Material[meshRenderer.materials.Length];
+                        materials[0] = playerMaterial;
+                        // Copy other materials if they exist
+                        for (int i = 1; i < materials.Length; i++)
+                        {
+                            materials[i] = meshRenderer.materials[i];
+                        }
+                        meshRenderer.materials = materials;
+                        Debug.Log($"Assigned material {playerMaterial.name} to PlayerItem {playerItem.name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"MeshRenderer not found or has no materials on PlayerItem: {playerItem.name}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"Player material not found for player: {playerManager.CurrentPlayer.PlayerName}");
+                }
+            }
         }
         else
         {

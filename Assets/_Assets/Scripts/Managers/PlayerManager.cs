@@ -17,7 +17,7 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private GameObject playerPrefab; // Prefab with Player component (model should be inside this prefab)
     [SerializeField] private GameObject playerUIPrefab; // Prefab with PlayerUI component
     
-    [Header("Player UI References")]
+    [Header("Player References")]
     [Tooltip("Custom names for each player. Element 0 = Player 1, Element 1 = Player 2, etc. Leave empty to use default names.")]
     [SerializeField] private List<string> playerNames = new List<string>();
     
@@ -29,6 +29,9 @@ public class PlayerManager : MonoBehaviour
     
     [Tooltip("Purchase probability for each AI player (0-1). Element 0 = Player 1, Element 1 = Player 2, etc. 0 = never buy, 1 = always buy (if affordable). Only applies to AI players. Leave empty to use AIController default.")]
     [SerializeField] private List<float> playerPurchaseProbability = new List<float>();
+    
+    [Tooltip("Material for each player's UI and items. Element 0 = Player 1, Element 1 = Player 2, etc. Will be assigned to PlayerUI UpperBanner Image and PlayerItem Mesh Renderer.")]
+    [SerializeField] private List<Material> playerItemMaterials = new List<Material>();
     
     [Header("Player Name Texts (Auto-Assign)")]
     [Tooltip("NameText UI elements for each player. Can be manually assigned or auto-populated when players are spawned.")]
@@ -327,6 +330,30 @@ public class PlayerManager : MonoBehaviour
     public List<Player> GetAIPlayers()
     {
         return players.Where(p => p.IsAI).ToList();
+    }
+    
+    /// <summary>
+    /// Get the material for a specific player by player ID
+    /// </summary>
+    public Material GetPlayerMaterial(int playerID)
+    {
+        if (playerID >= 0 && playerID < playerItemMaterials.Count)
+        {
+            return playerItemMaterials[playerID];
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// Get the material for a specific player by Player object
+    /// </summary>
+    public Material GetPlayerMaterial(Player player)
+    {
+        if (player != null)
+        {
+            return GetPlayerMaterial(player.PlayerID);
+        }
+        return null;
     }
     
     /// <summary>
@@ -708,6 +735,47 @@ public class PlayerManager : MonoBehaviour
         {
             Debug.LogWarning($"Could not find NameText in PlayerUI for {playerName}");
         }
+        
+        // Assign player material to UpperBanner Image component
+        AssignPlayerMaterialToUI(playerUIObj, player.PlayerID);
+    }
+    
+    /// <summary>
+    /// Assigns the player's material to UpperBanner Image component
+    /// </summary>
+    private void AssignPlayerMaterialToUI(GameObject playerUIObj, int playerID)
+    {
+        if (playerUIObj == null || playerID < 0 || playerID >= playerItemMaterials.Count)
+        {
+            return;
+        }
+        
+        Material playerMaterial = playerItemMaterials[playerID];
+        if (playerMaterial == null)
+        {
+            Debug.LogWarning($"Player material for player ID {playerID} is not assigned!");
+            return;
+        }
+        
+        // Find UpperBanner GameObject
+        Transform upperBannerTransform = playerUIObj.transform.Find("UpperBanner");
+        if (upperBannerTransform == null)
+        {
+            Debug.LogWarning($"UpperBanner not found in PlayerUI: {playerUIObj.name}");
+            return;
+        }
+        
+        // Get Image component from UpperBanner
+        UnityEngine.UI.Image upperBannerImage = upperBannerTransform.GetComponent<UnityEngine.UI.Image>();
+        if (upperBannerImage == null)
+        {
+            Debug.LogWarning($"Image component not found on UpperBanner in PlayerUI: {playerUIObj.name}");
+            return;
+        }
+        
+        // Assign material to Image component
+        upperBannerImage.material = playerMaterial;
+        Debug.Log($"Assigned material {playerMaterial.name} to UpperBanner Image for player ID {playerID}");
     }
     
     /// <summary>
