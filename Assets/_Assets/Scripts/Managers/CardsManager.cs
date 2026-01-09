@@ -31,7 +31,7 @@ public class CardsManager : MonoBehaviour
     
     [Header("Real Estate Settings")]
     [SerializeField] private RealEstateData realEstateData;
-    [SerializeField] private RealEstateUI forSaleUIController;
+    [SerializeField] private RealEstateUI realEstateUIController;
     
     [Header("Business Settings")]
     [SerializeField] private BusinessData businessData;
@@ -79,26 +79,26 @@ public class CardsManager : MonoBehaviour
             debugManager = FindAnyObjectByType<StockManager>();
         }
         
-        // Find ForSaleUIController if not assigned
-        if (forSaleUIController == null)
+        // Find RealEstateUIController if not assigned
+        if (realEstateUIController == null)
         {
             GameObject forSaleUIObj = GameObject.Find("ForSaleUI");
             if (forSaleUIObj != null)
             {
-                forSaleUIController = forSaleUIObj.GetComponent<RealEstateUI>();
+                realEstateUIController = forSaleUIObj.GetComponent<RealEstateUI>();
             }
             
-            if (forSaleUIController == null)
+            if (realEstateUIController == null)
             {
-                forSaleUIController = FindAnyObjectByType<RealEstateUI>();
+                realEstateUIController = FindAnyObjectByType<RealEstateUI>();
             }
         }
         
-        // Subscribe to ForSaleUI events
-        if (forSaleUIController != null)
+        // Subscribe to RealEstateUI events
+        if (realEstateUIController != null)
         {
-            forSaleUIController.OnPurchaseComplete += OnRealEstatePurchaseComplete;
-            forSaleUIController.OnPurchaseCancelled += OnRealEstatePurchaseCancelled;
+            realEstateUIController.OnPurchaseComplete += OnRealEstatePurchaseComplete;
+            realEstateUIController.OnPurchaseCancelled += OnRealEstatePurchaseCancelled;
         }
         
         // Find BusinessUIController if not assigned
@@ -570,14 +570,14 @@ public class CardsManager : MonoBehaviour
             Debug.LogWarning($"Path transform not found for: {currentRealEstatePathName}");
         }
         
-        // Show ForSaleUI
-        if (forSaleUIController != null)
+        // Show RealEstateUI
+        if (realEstateUIController != null)
         {
-            forSaleUIController.ShowForSaleUI(property, cardController, pathTransform, categoryName);
+            realEstateUIController.ShowForSaleUI(property, cardController, pathTransform, categoryName);
         }
         else
         {
-            Debug.LogError("ForSaleUIController is not assigned! Cannot show ForSaleUI.");
+            Debug.LogError("RealEstateUIController is not assigned! Cannot show RealEstateUI.");
         }
     }
     
@@ -760,11 +760,11 @@ public class CardsManager : MonoBehaviour
             player.OnMovementComplete -= OnPlayerMovementComplete;
         }
         
-        // Unsubscribe from ForSaleUI events
-        if (forSaleUIController != null)
+        // Unsubscribe from RealEstateUI events
+        if (realEstateUIController != null)
         {
-            forSaleUIController.OnPurchaseComplete -= OnRealEstatePurchaseComplete;
-            forSaleUIController.OnPurchaseCancelled -= OnRealEstatePurchaseCancelled;
+            realEstateUIController.OnPurchaseComplete -= OnRealEstatePurchaseComplete;
+            realEstateUIController.OnPurchaseCancelled -= OnRealEstatePurchaseCancelled;
         }
         
         // Unsubscribe from BusinessUI events
