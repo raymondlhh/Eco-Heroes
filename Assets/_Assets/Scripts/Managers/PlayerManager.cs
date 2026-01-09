@@ -17,15 +17,14 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private GameObject playerPrefab; // Prefab with Player component (model should be inside this prefab)
     [SerializeField] private GameObject playerUIPrefab; // Prefab with PlayerUI component
     
-    [Header("Player Names")]
+    [Header("Player UI References")]
     [Tooltip("Custom names for each player. Element 0 = Player 1, Element 1 = Player 2, etc. Leave empty to use default names.")]
     [SerializeField] private List<string> playerNames = new List<string>();
     
-    [Header("Player Initial Cash")]
     [Tooltip("Initial cash amount for each player. Element 0 = Player 1, Element 1 = Player 2, etc. Leave empty to use prefab default.")]
     [SerializeField] private List<float> playerInitialCash = new List<float>();
     
-    [Header("Player UI References")]
+    [Header("Player Name Texts (Auto-Assign)")]
     [Tooltip("NameText UI elements for each player. Can be manually assigned or auto-populated when players are spawned.")]
     [SerializeField] private List<TextMeshProUGUI> playerNameTexts = new List<TextMeshProUGUI>();
     
