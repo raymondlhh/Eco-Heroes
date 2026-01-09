@@ -773,9 +773,13 @@ public class PlayerManager : MonoBehaviour
             return;
         }
         
-        // Assign material to Image component
+        // Assign the original material directly to Image component
+        // Unity UI automatically creates a material instance when you assign a material to an Image component
+        // This ensures each UI element has its own isolated material instance
+        // The instance is automatically cleaned up when the GameObject is destroyed
         upperBannerImage.material = playerMaterial;
-        Debug.Log($"Assigned material {playerMaterial.name} to UpperBanner Image for player ID {playerID}");
+        
+        Debug.Log($"Assigned material {playerMaterial.name} to UpperBanner Image for player ID {playerID} (Unity will auto-create instance)");
     }
     
     /// <summary>
