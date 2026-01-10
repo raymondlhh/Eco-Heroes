@@ -47,11 +47,17 @@ public class CardsManager : MonoBehaviour
     [SerializeField] private BusinessData businessData;
     [SerializeField] private BusinessUI businessUIController;
     
+    [Header("Market Watch Settings")]
+    [SerializeField] private MarketWatchData marketWatchData;
+    [SerializeField] private MarketWatchUI marketWatchUIController;
+    
     private bool isCardAnimating = false;
     private CardController currentRealEstateCard;
     private string currentRealEstatePathName;
     private CardController currentBusinessCard;
     private string currentBusinessPathName;
+    private CardController currentMarketWatchCard;
+    private string currentMarketWatchPathName;
     private bool isProcessingPath = false; // Flag to prevent duplicate processing
     private PlayerController subscribedPlayerController = null; // Track which PlayerController we're subscribed to
     private int subscribedPlayerID = -1; // Track which player ID we're subscribed to (for verification)
@@ -228,6 +234,27 @@ public class CardsManager : MonoBehaviour
         {
             businessUIController.OnPurchaseComplete += OnBusinessPurchaseComplete;
             businessUIController.OnPurchaseCancelled += OnBusinessPurchaseCancelled;
+        }
+        
+        // Find MarketWatchUIController if not assigned
+        if (marketWatchUIController == null)
+        {
+            GameObject marketWatchUIObj = GameObject.Find("MarketWatchUI");
+            if (marketWatchUIObj != null)
+            {
+                marketWatchUIController = marketWatchUIObj.GetComponent<MarketWatchUI>();
+            }
+            
+            if (marketWatchUIController == null)
+            {
+                marketWatchUIController = FindAnyObjectByType<MarketWatchUI>();
+            }
+        }
+        
+        // Subscribe to MarketWatchUI events
+        if (marketWatchUIController != null)
+        {
+            marketWatchUIController.OnEffectComplete += OnMarketWatchEffectComplete;
         }
         
         // Subscribe to current player's movement complete event
@@ -593,10 +620,11 @@ public class CardsManager : MonoBehaviour
             cardController = spawnedCard.AddComponent<CardController>();
         }
         
-        // Check if this is a RealEstate or Business path
+        // Check if this is a RealEstate, Business, or MarketWatch path
         bool isRealEstatePath = IsRealEstatePath(pathName);
         bool isBusinessPath = IsBusinessPath(pathName);
-        bool waitForInput = isRealEstatePath || isBusinessPath;
+        bool isMarketWatchPath = IsMarketWatchPath(pathName);
+        bool waitForInput = isRealEstatePath || isBusinessPath || isMarketWatchPath;
         
         // If it's a RealEstate path, subscribe to card reached end event
         if (isRealEstatePath)
@@ -614,6 +642,14 @@ public class CardsManager : MonoBehaviour
             cardController.OnCardReachedEnd += OnBusinessCardReachedEnd;
         }
         
+        // If it's a MarketWatch path, subscribe to card reached end event
+        if (isMarketWatchPath)
+        {
+            currentMarketWatchCard = cardController;
+            currentMarketWatchPathName = pathName;
+            cardController.OnCardReachedEnd += OnMarketWatchCardReachedEnd;
+        }
+        
         // Start card animation with the configured speed and wait duration
         // Convert speed to duration: higher speed = lower duration (faster movement)
         // Base duration of 2 seconds divided by speed
@@ -621,8 +657,8 @@ public class CardsManager : MonoBehaviour
         isCardAnimating = true;
         cardController.AnimateCard(cardsStartPath, cardsEndPath, moveDuration, cardWaitDuration, waitForInput);
         
-        // Monitor when card animation completes (only for non-RealEstate and non-Business cards)
-        if (!isRealEstatePath && !isBusinessPath)
+        // Monitor when card animation completes (only for non-RealEstate, non-Business, and non-MarketWatch cards)
+        if (!isRealEstatePath && !isBusinessPath && !isMarketWatchPath)
         {
             StartCoroutine(WaitForCardAnimation(cardController));
         }
@@ -1112,6 +1148,20 @@ public class CardsManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Checks if the path name is a MarketWatch path (e.g., "PathXX_MarketWatch")
+    /// </summary>
+    private bool IsMarketWatchPath(string pathName)
+    {
+        if (string.IsNullOrEmpty(pathName))
+        {
+            return false;
+        }
+        
+        string categoryName = ExtractCategoryFromPath(pathName);
+        return categoryName.StartsWith("MarketWatch", System.StringComparison.OrdinalIgnoreCase);
+    }
+    
+    /// <summary>
     /// Called when a RealEstate card reaches the end path
     /// </summary>
     private void OnRealEstateCardReachedEnd(CardController cardController)
@@ -1328,6 +1378,82 @@ public class CardsManager : MonoBehaviour
         Debug.Log("Business purchase cancelled. Card destroyed and dice spawned.");
     }
     
+    /// <summary>
+    /// Called when a MarketWatch card reaches the end path
+    /// </summary>
+    private void OnMarketWatchCardReachedEnd(CardController cardController)
+    {
+        if (string.IsNullOrEmpty(currentMarketWatchPathName))
+        {
+            Debug.LogError("MarketWatch path name is empty!");
+            return;
+        }
+        
+        // Extract card name from path (e.g., "Path12_MarketWatch" -> "MarketWatch")
+        // For MarketWatch, we'll use a random card or match by card name if available
+        string categoryName = ExtractCategoryFromPath(currentMarketWatchPathName);
+        
+        // Get MarketWatch card data
+        if (marketWatchData == null)
+        {
+            Debug.LogError("MarketWatchData is not assigned! Cannot show MarketWatchUI.");
+            return;
+        }
+        
+        // Try to get card by name first (if card name matches path), otherwise get random
+        MarketWatchData.MarketWatchCard card = null;
+        
+        // Check if we can match by card name (e.g., if path is "Path12_MarketWatch01")
+        if (categoryName.Contains("MarketWatch"))
+        {
+            // Try to extract card number if available
+            string cardName = categoryName; // Use full category name as card name
+            card = marketWatchData.GetCardByName(cardName);
+        }
+        
+        // If no specific card found, get a random one
+        if (card == null)
+        {
+            card = marketWatchData.GetRandomCard();
+        }
+        
+        if (card == null)
+        {
+            Debug.LogWarning($"MarketWatch card data not found for: {categoryName}");
+            return;
+        }
+        
+        // Show MarketWatchUI
+        if (marketWatchUIController != null)
+        {
+            marketWatchUIController.ShowMarketWatchUI(card, cardController);
+        }
+        else
+        {
+            Debug.LogError("MarketWatchUIController is not assigned! Cannot show MarketWatchUI.");
+        }
+    }
+    
+    /// <summary>
+    /// Called when MarketWatch effect is complete
+    /// </summary>
+    private void OnMarketWatchEffectComplete()
+    {
+        // Card has been destroyed by MarketWatchUI, allow dice rolling again
+        isCardAnimating = false;
+        currentMarketWatchCard = null;
+        currentMarketWatchPathName = null;
+        
+        // Spawn dice
+        GameManager gameManager = FindAnyObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.SpawnDice();
+        }
+        
+        Debug.Log("MarketWatch effect complete. Dice spawned.");
+    }
+    
     private void OnDestroy()
     {
         // Unsubscribe from player events
@@ -1353,6 +1479,12 @@ public class CardsManager : MonoBehaviour
             businessUIController.OnPurchaseCancelled -= OnBusinessPurchaseCancelled;
         }
         
+        // Unsubscribe from MarketWatchUI events
+        if (marketWatchUIController != null)
+        {
+            marketWatchUIController.OnEffectComplete -= OnMarketWatchEffectComplete;
+        }
+        
         // Unsubscribe from card events
         if (currentRealEstateCard != null)
         {
@@ -1362,6 +1494,11 @@ public class CardsManager : MonoBehaviour
         if (currentBusinessCard != null)
         {
             currentBusinessCard.OnCardReachedEnd -= OnBusinessCardReachedEnd;
+        }
+        
+        if (currentMarketWatchCard != null)
+        {
+            currentMarketWatchCard.OnCardReachedEnd -= OnMarketWatchCardReachedEnd;
         }
     }
 }
