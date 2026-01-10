@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Eco-Heroes.sln"
+    "dotnet.defaultSolution": "Springboard-Challenge.sln"
 }

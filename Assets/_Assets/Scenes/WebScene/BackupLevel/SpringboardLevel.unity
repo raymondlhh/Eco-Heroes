@@ -8252,7 +8252,7 @@ MonoBehaviour:
   - 6600
   - 6600
   - 6600
-  playerIsAI: 00000000
+  playerIsAI: 01010101
   playerPurchaseProbability:
   - 1
   - 1
