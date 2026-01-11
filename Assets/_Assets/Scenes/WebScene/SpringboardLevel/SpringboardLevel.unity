@@ -171,7 +171,7 @@ MonoBehaviour:
   IsSecondMethod: 1
   diceCheckInterval: 0.1
   dicePrefab: {fileID: 512676549986405767, guid: 133e4974bd8608147bcc3880ae313a26, type: 3}
-  IsDebugging: 0
+  IsDebugging: 1
   debugFixedSteps: 32
   diceMeter: {fileID: 1520114803}
   doubleVideoPlayers:
@@ -10661,7 +10661,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 582d95f79ef6de84b9c138bf1f239eba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numberOfPlayers: 4
+  numberOfPlayers: 1
   playerPrefab: {fileID: 98607575583157904, guid: cc311b4f249efe14f8c3b14680b21500, type: 3}
   playerUIPrefab: {fileID: 2869733658695302378, guid: 2de2d6af710bd6944ac67669a8780397, type: 3}
   playerNames:

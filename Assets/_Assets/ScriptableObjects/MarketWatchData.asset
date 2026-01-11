@@ -14,11 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cards:
   - cardName: 
-    displayName: 
-    description: 
+    displayName: MarketWatchA
+    description: The real estate market experiences a downturn, reducing your monthly
+      cash flow from all real estate properties.
     effectType: 0
     targetAssetType: 0
     conditionType: 0
+    specificPropertyName: 
+    cashFlowAmount: -100
+    oneTimeCashAmount: 0
+    rentalIncreaseAmount: 0
+    assetCount: 1
+    sellOptionText: 
+    keepOptionText: 
+  - cardName: MarketWatchB
+    displayName: MarketWatchB
+    description: 
+    effectType: 0
+    targetAssetType: 0
+    conditionType: 1
     specificPropertyName: 
     cashFlowAmount: 0
     oneTimeCashAmount: 0
@@ -26,21 +40,8 @@ MonoBehaviour:
     assetCount: 1
     sellOptionText: 
     keepOptionText: 
-  - cardName: 
-    displayName: 
-    description: 
-    effectType: 0
-    targetAssetType: 0
-    conditionType: 0
-    specificPropertyName: 
-    cashFlowAmount: 0
-    oneTimeCashAmount: 0
-    rentalIncreaseAmount: 0
-    assetCount: 1
-    sellOptionText: 
-    keepOptionText: 
-  - cardName: 
-    displayName: 
+  - cardName: MarketWatchC
+    displayName: MarketWatchC
     description: 
     effectType: 0
     targetAssetType: 0
