@@ -1421,23 +1421,8 @@ public class CardsManager : MonoBehaviour
         {
             Debug.LogWarning($"MarketWatch card data not found for: {categoryName}. Skipping MarketWatch processing.");
             
-            // Destroy the card since we can't process it
-            if (cardController != null)
-            {
-                cardController.DestroyCard();
-            }
-            
-            // Reset state and allow dice rolling again
-            isCardAnimating = false;
-            currentMarketWatchCard = null;
-            currentMarketWatchPathName = null;
-            
-            // Spawn dice to continue the game
-            GameManager gameManager = FindAnyObjectByType<GameManager>();
-            if (gameManager != null)
-            {
-                gameManager.SpawnDice();
-            }
+            // Wait for Card Wait Duration before continuing (same as normal card processing)
+            StartCoroutine(WaitAndSkipMarketWatch(cardController));
             
             return;
         }
@@ -1471,6 +1456,35 @@ public class CardsManager : MonoBehaviour
         }
         
         Debug.Log("MarketWatch effect complete. Dice spawned.");
+    }
+    
+    /// <summary>
+    /// Waits for Card Wait Duration before skipping MarketWatch processing
+    /// </summary>
+    private IEnumerator WaitAndSkipMarketWatch(CardController cardController)
+    {
+        // Wait for the Card Wait Duration (same as normal card processing)
+        yield return new WaitForSeconds(cardWaitDuration);
+        
+        // Destroy the card since we can't process it
+        if (cardController != null)
+        {
+            cardController.DestroyCard();
+        }
+        
+        // Reset state and allow dice rolling again
+        isCardAnimating = false;
+        currentMarketWatchCard = null;
+        currentMarketWatchPathName = null;
+        
+        // Spawn dice to continue the game
+        GameManager gameManager = FindAnyObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.SpawnDice();
+        }
+        
+        Debug.Log("MarketWatch skipped after waiting Card Wait Duration. Dice spawned.");
     }
     
     private void OnDestroy()

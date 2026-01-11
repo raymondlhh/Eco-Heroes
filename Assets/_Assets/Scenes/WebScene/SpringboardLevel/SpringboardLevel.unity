@@ -171,8 +171,8 @@ MonoBehaviour:
   IsSecondMethod: 1
   diceCheckInterval: 0.1
   dicePrefab: {fileID: 512676549986405767, guid: 133e4974bd8608147bcc3880ae313a26, type: 3}
-  IsDebugging: 0
-  debugFixedSteps: 1
+  IsDebugging: 1
+  debugFixedSteps: 7
   diceMeter: {fileID: 1520114803}
   doubleVideoPlayers:
   - {fileID: 1585298038}
