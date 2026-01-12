@@ -457,23 +457,23 @@ public class GameManager : MonoBehaviour
         // First, stop and hide the video player
         HideDiceVideo();
         
-        VideoClip targetClip = null;
+        string targetUrl = null;
         string clipDescription = "";
         
         if (useOneDice)
         {
             // Single dice mode: show single_no1 to single_no6
-            if (diceManager.SingleVideoClips != null && firstValue >= 1 && firstValue <= 6)
+            if (diceManager.SingleVideoUrls != null && firstValue >= 1 && firstValue <= 6)
             {
                 int index = firstValue - 1; // Convert 1-6 to 0-5
-                if (index < diceManager.SingleVideoClips.Length && diceManager.SingleVideoClips[index] != null)
+                if (index < diceManager.SingleVideoUrls.Length && !string.IsNullOrEmpty(diceManager.SingleVideoUrls[index]))
                 {
-                    targetClip = diceManager.SingleVideoClips[index];
+                    targetUrl = diceManager.SingleVideoUrls[index];
                     clipDescription = $"single_no{firstValue}";
                 }
                 else
                 {
-                    Debug.LogWarning($"Single video clip at index {index} is null or out of range!");
+                    Debug.LogWarning($"Single video URL at index {index} is null or out of range!");
                     return;
                 }
             }
@@ -489,19 +489,19 @@ public class GameManager : MonoBehaviour
                 // Double roll: show double_no2_1+1, double_no4_2+2, etc.
                 // Mapping: 1+1=2, 2+2=4, 3+3=6, 4+4=8, 5+5=10, 6+6=12
                 // Index mapping: (sum/2) - 1 = (firstValue) - 1
-                if (diceManager.DoubleVideoClips != null && firstValue >= 1 && firstValue <= 6)
+                if (diceManager.DoubleVideoUrls != null && firstValue >= 1 && firstValue <= 6)
                 {
                     int index = firstValue - 1; // Convert 1-6 to 0-5
-                    if (index < diceManager.DoubleVideoClips.Length && diceManager.DoubleVideoClips[index] != null)
+                    if (index < diceManager.DoubleVideoUrls.Length && !string.IsNullOrEmpty(diceManager.DoubleVideoUrls[index]))
                     {
-                        targetClip = diceManager.DoubleVideoClips[index];
+                        targetUrl = diceManager.DoubleVideoUrls[index];
                         clipDescription = $"double_no{sum}_{firstValue}+{secondValue}";
                     }
                     else
                     {
-                        // Fallback: try to find by matching clip name
-                        targetClip = FindVideoClipByName(diceManager.DoubleVideoClips, sum, firstValue, secondValue, true);
-                        if (targetClip != null)
+                        // Fallback: try to find by matching URL path
+                        targetUrl = FindVideoUrlByName(diceManager.DoubleVideoUrls, sum, firstValue, secondValue, true);
+                        if (targetUrl != null)
                         {
                             clipDescription = $"double_no{sum}_{firstValue}+{secondValue} (found by name)";
                         }
@@ -512,25 +512,25 @@ public class GameManager : MonoBehaviour
             {
                 // Non-double roll: show no3_1+2, no4_1+3, etc.
                 // Videos: no3_1+2, no4_1+3, no5_2+3, no6_2+4, no7_3+4, no8_3+5, no9_4+5, no10_4+6, no11_5+6
-                if (diceManager.NonDoubleVideoClips != null)
+                if (diceManager.NonDoubleVideoUrls != null)
                 {
-                    // Try to find exact match by clip name first
-                    targetClip = FindVideoClipByName(diceManager.NonDoubleVideoClips, sum, firstValue, secondValue, false);
-                    if (targetClip != null)
+                    // Try to find exact match by URL path first
+                    targetUrl = FindVideoUrlByName(diceManager.NonDoubleVideoUrls, sum, firstValue, secondValue, false);
+                    if (targetUrl != null)
                     {
                         clipDescription = $"no{sum}_{firstValue}+{secondValue} (found by name)";
                     }
                     else
                     {
-                        // Fallback: match by sum only (find first clip with matching sum)
-                        for (int i = 0; i < diceManager.NonDoubleVideoClips.Length; i++)
+                        // Fallback: match by sum only (find first URL with matching sum in path)
+                        for (int i = 0; i < diceManager.NonDoubleVideoUrls.Length; i++)
                         {
-                            if (diceManager.NonDoubleVideoClips[i] != null)
+                            if (!string.IsNullOrEmpty(diceManager.NonDoubleVideoUrls[i]))
                             {
-                                string clipName = diceManager.NonDoubleVideoClips[i].name.ToLower();
-                                if (clipName.Contains($"no{sum}") || clipName.Contains($"_{sum}_"))
+                                string urlPath = diceManager.NonDoubleVideoUrls[i].ToLower();
+                                if (urlPath.Contains($"no{sum}") || urlPath.Contains($"_{sum}_"))
                                 {
-                                    targetClip = diceManager.NonDoubleVideoClips[i];
+                                    targetUrl = diceManager.NonDoubleVideoUrls[i];
                                     clipDescription = $"no{sum}_{firstValue}+{secondValue} (sum fallback)";
                                     break;
                                 }
@@ -541,8 +541,8 @@ public class GameManager : MonoBehaviour
             }
         }
         
-        // Play the video clip if found
-        if (targetClip != null)
+        // Play the video URL if found
+        if (!string.IsNullOrEmpty(targetUrl))
         {
             // Switch to Dice material before playing dice video
             diceManager.SwitchToDiceMaterial();
@@ -553,39 +553,63 @@ public class GameManager : MonoBehaviour
                 videoPlayer.gameObject.SetActive(true);
             }
             
-            // Set and play the clip
-            videoPlayer.clip = targetClip;
+            // Ensure VideoPlayer source is set to URL
+            videoPlayer.source = VideoSource.Url;
+            
+            // Get full URL path and play
+            string fullUrl = GetVideoUrl(targetUrl);
+            videoPlayer.url = fullUrl;
+            videoPlayer.isLooping = false; // Dice videos don't loop
             videoPlayer.Play();
-            Debug.Log($"[GameManager] Showing dice video: {clipDescription}");
+            
+            Debug.Log($"[GameManager] Showing dice video: {clipDescription} from URL: {fullUrl}");
         }
         else
         {
-            Debug.LogWarning($"Could not find matching video clip for {firstValue}+{secondValue}");
+            Debug.LogWarning($"Could not find matching video URL for {firstValue}+{secondValue}");
         }
     }
     
     /// <summary>
-    /// Helper method to find a video clip by matching its name with dice values
+    /// Gets the full URL path for a video file (delegates to DiceManager)
     /// </summary>
-    private VideoClip FindVideoClipByName(VideoClip[] clips, int sum, int firstValue, int secondValue, bool isDouble)
+    private string GetVideoUrl(string relativePath)
     {
-        if (clips == null) return null;
+        if (diceManager == null)
+        {
+            return relativePath;
+        }
+        
+        // Use DiceManager's GetVideoUrl method
+        return diceManager.GetVideoUrl(relativePath);
+    }
+    
+    /// <summary>
+    /// Helper method to find a video URL by matching its path with dice values
+    /// </summary>
+    private string FindVideoUrlByName(string[] urls, int sum, int firstValue, int secondValue, bool isDouble)
+    {
+        if (urls == null) return null;
         
         string searchPattern1 = $"{firstValue}+{secondValue}";
         string searchPattern2 = $"{secondValue}+{firstValue}";
         string sumPattern = $"no{sum}";
         
-        foreach (VideoClip clip in clips)
+        foreach (string url in urls)
         {
-            if (clip != null)
+            if (!string.IsNullOrEmpty(url))
             {
-                string clipName = clip.name.ToLower();
-                bool matchesSum = clipName.Contains(sumPattern) || clipName.Contains($"_{sum}_");
-                bool matchesValues = clipName.Contains(searchPattern1) || clipName.Contains(searchPattern2);
+                // Extract filename from URL path
+                string urlPath = url.ToLower();
+                // Get just the filename part (after last / or \)
+                string fileName = System.IO.Path.GetFileName(urlPath).ToLower();
+                
+                bool matchesSum = fileName.Contains(sumPattern) || fileName.Contains($"_{sum}_");
+                bool matchesValues = fileName.Contains(searchPattern1) || fileName.Contains(searchPattern2);
                 
                 if (matchesSum && matchesValues)
                 {
-                    return clip;
+                    return url;
                 }
             }
         }

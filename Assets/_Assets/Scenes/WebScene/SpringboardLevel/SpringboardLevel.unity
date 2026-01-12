@@ -177,31 +177,32 @@ MonoBehaviour:
   rawImage: {fileID: 1018232904}
   diceMaterial: {fileID: 2100000, guid: 8384bad54445f15458fc9568e5a02c90, type: 2}
   diceMeterMaterial: {fileID: 2100000, guid: bf234ab3ea290dd4194fb7416cd744fc, type: 2}
-  diceMeterVideoClip: {fileID: 32900000, guid: e3dc11552d3777246abea8fac66e8274, type: 3}
-  doubleVideoClips:
-  - {fileID: 32900000, guid: 864bcb2e6556f4a46ba7c930d5e75c3d, type: 3}
-  - {fileID: 32900000, guid: a144e66755255fc40831a9a76ef15d94, type: 3}
-  - {fileID: 32900000, guid: 7c9b3b52af5772044822224d92e655c8, type: 3}
-  - {fileID: 32900000, guid: 6c8158d345fb8914d9efb3292c097309, type: 3}
-  - {fileID: 32900000, guid: d4e4948d5c3f0c544be53c5ac8ebeb69, type: 3}
-  - {fileID: 32900000, guid: d32536fd3d96c824b9964a6ecad572d7, type: 3}
-  singleVideoClips:
-  - {fileID: 32900000, guid: 927e72de4dee7fb43a9d43b3285c9b32, type: 3}
-  - {fileID: 32900000, guid: fd9837004da5c3a478843ca3edd373f1, type: 3}
-  - {fileID: 32900000, guid: 5c410cc42133a96438fd170de0cd047c, type: 3}
-  - {fileID: 32900000, guid: 0c4d7d3ac25dc084ab2e9d0fa9a3174b, type: 3}
-  - {fileID: 32900000, guid: 7f6715dbdd5a10b468539d6ad11d4553, type: 3}
-  - {fileID: 32900000, guid: dca4c6988e9263a4db9546b92dcdf0e7, type: 3}
-  nonDoubleVideoClips:
-  - {fileID: 32900000, guid: f88cb43ee80197d4d8a74971d854d3b0, type: 3}
-  - {fileID: 32900000, guid: fc1155a6176b9014b8ab7a1d0485573d, type: 3}
-  - {fileID: 32900000, guid: c8e99b348fa0aff4690ce0f4308fe2cb, type: 3}
-  - {fileID: 32900000, guid: 7e36311ce8e17314bbcf51952b293de2, type: 3}
-  - {fileID: 32900000, guid: 81fd90e83d2e0a44e99496f71fd15693, type: 3}
-  - {fileID: 32900000, guid: 6dbaa9e41742c034887842b91dbd8090, type: 3}
-  - {fileID: 32900000, guid: 64cbc1ea272825846b336390929a0881, type: 3}
-  - {fileID: 32900000, guid: c19a939e1b1ca284fb9c49c080644031, type: 3}
-  - {fileID: 32900000, guid: 9e24f9e2da99e0845b88fc72b3559d7e, type: 3}
+  diceMeterVideoUrl: Assets/StreamingAssets/Videos/Dice/DiceMeter.m4v
+  doubleVideoUrls:
+  - Assets/StreamingAssets/Videos/Dice/double/double_no2_1+1.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/double_no4_2+2.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/double_no6_3+3.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/double_no8_4+4.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/double_no10_5+5.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/double_no12_6+6.m4v
+  singleVideoUrls:
+  - Assets/StreamingAssets/Videos/Dice/single/single_no1.m4v
+  - Assets/StreamingAssets/Videos/Dice/single/single_no2.m4v
+  - Assets/StreamingAssets/Videos/Dice/single/single_no3.m4v
+  - Assets/StreamingAssets/Videos/Dice/single/single_no4.m4v
+  - Assets/StreamingAssets/Videos/Dice/single/single_no5.m4v
+  - Assets/StreamingAssets/Videos/Dice/single/single_no6.m4v
+  nonDoubleVideoUrls:
+  - Assets/StreamingAssets/Videos/Dice/double/no3_1+2.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no4_1+3.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no5_2+3.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no6_2+4.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no7_3+4.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no8_3+5.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no9_4+5.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no10_4+6.m4v
+  - Assets/StreamingAssets/Videos/Dice/double/no11_5+6.m4v
+  videoBasePath: 
 --- !u!1 &19521629
 GameObject:
   m_ObjectHideFlags: 0
@@ -7493,7 +7494,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: bf234ab3ea290dd4194fb7416cd744fc, type: 2}
+  m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -12557,7 +12558,7 @@ VideoPlayer:
   m_TargetMaterialProperty: <noninit>
   m_RenderMode: 2
   m_AspectRatio: 2
-  m_DataSource: 0
+  m_DataSource: 1
   m_TimeUpdateMode: 2
   m_PlaybackSpeed: 1
   m_AudioOutputMode: 2
@@ -12565,7 +12566,7 @@ VideoPlayer:
   - {fileID: 0}
   m_DirectAudioVolumes:
   - 1
-  m_Url: 
+  m_Url: Assets/StreamingAssets/Videos/Dice/DiceMeter.m4v
   m_EnabledAudioTracks: 01
   m_DirectAudioMutes: 00
   m_ControlledAudioTrackCount: 1

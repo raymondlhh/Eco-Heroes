@@ -25,10 +25,13 @@ public class DiceManager : MonoBehaviour
     [SerializeField] private RawImage rawImage; // RawImage component shared by both dice and DiceMeter (materials are switched dynamically)
     [SerializeField] private Material diceMaterial; // Material to use when displaying dice videos
     [SerializeField] private Material diceMeterMaterial; // Material to use when displaying DiceMeter video
-    [SerializeField] private VideoClip diceMeterVideoClip; // Video clip to play on DiceMeter
-    [SerializeField] private VideoClip[] doubleVideoClips; // Array for double rolls: double_no2_1+1, double_no4_2+2, etc.
-    [SerializeField] private VideoClip[] singleVideoClips; // Array for single dice: single_no1 to single_no6
-    [SerializeField] private VideoClip[] nonDoubleVideoClips; // Array for non-double two dice: no3_1+2, no4_1+3, etc.
+    [SerializeField] private string diceMeterVideoUrl; // URL path to DiceMeter video (e.g., "StreamingAssets/Videos/Dice/DiceMeter.m4v")
+    [SerializeField] private string[] doubleVideoUrls; // Array of URL paths for double rolls: double_no2_1+1, double_no4_2+2, etc.
+    [SerializeField] private string[] singleVideoUrls; // Array of URL paths for single dice: single_no1 to single_no6
+    [SerializeField] private string[] nonDoubleVideoUrls; // Array of URL paths for non-double two dice: no3_1+2, no4_1+3, etc.
+    [Header("Video URL Settings")]
+    [Tooltip("Base path for video URLs. If empty, will use Application.streamingAssetsPath")]
+    [SerializeField] private string videoBasePath = ""; // Base path for video URLs
     
     // Public properties to access spawners and settings
     public Transform FirstSpawner => firstSpawner;
@@ -43,10 +46,10 @@ public class DiceManager : MonoBehaviour
     public RawImage RawImage => rawImage;
     public Material DiceMaterial => diceMaterial;
     public Material DiceMeterMaterial => diceMeterMaterial;
-    public VideoClip[] DoubleVideoClips => doubleVideoClips;
-    public VideoClip[] SingleVideoClips => singleVideoClips;
-    public VideoClip[] NonDoubleVideoClips => nonDoubleVideoClips;
-    public VideoClip DiceMeterVideoClip => diceMeterVideoClip;
+    public string[] DoubleVideoUrls => doubleVideoUrls;
+    public string[] SingleVideoUrls => singleVideoUrls;
+    public string[] NonDoubleVideoUrls => nonDoubleVideoUrls;
+    public string DiceMeterVideoUrl => diceMeterVideoUrl;
     
     /// <summary>
     /// Checks if both dice have the same value (only valid in two dice mode)
@@ -173,12 +176,16 @@ public class DiceManager : MonoBehaviour
             return;
         }
         
-        // Ensure VideoPlayer is set to render to RenderTexture
+        // Ensure VideoPlayer is set to render to RenderTexture and use URL source
         if (videoPlayer.renderMode != VideoRenderMode.RenderTexture)
         {
             videoPlayer.renderMode = VideoRenderMode.RenderTexture;
             Debug.Log("[DiceManager] VideoPlayer render mode set to RenderTexture.");
         }
+        
+        // Set VideoPlayer source to URL
+        videoPlayer.source = VideoSource.Url;
+        Debug.Log("[DiceManager] VideoPlayer source set to URL.");
         
         // Create or get RenderTexture if not already set
         RenderTexture renderTexture = videoPlayer.targetTexture;
@@ -245,6 +252,35 @@ public class DiceManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Gets the full URL path for a video file
+    /// </summary>
+    public string GetVideoUrl(string relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath))
+        {
+            return null;
+        }
+        
+        // If path already starts with http:// or https://, use it as-is
+        if (relativePath.StartsWith("http://") || relativePath.StartsWith("https://"))
+        {
+            return relativePath;
+        }
+        
+        // If base path is specified, use it
+        if (!string.IsNullOrEmpty(videoBasePath))
+        {
+            // Ensure proper path separator
+            string basePath = videoBasePath.TrimEnd('/', '\\');
+            string videoPath = relativePath.TrimStart('/', '\\');
+            return $"{basePath}/{videoPath}";
+        }
+        
+        // Otherwise, use StreamingAssets path
+        return System.IO.Path.Combine(Application.streamingAssetsPath, relativePath).Replace('\\', '/');
+    }
+    
+    /// <summary>
     /// Plays the DiceMeter video using the shared VideoPlayer and switches to DiceMeter material
     /// </summary>
     public void PlayDiceMeterVideo()
@@ -255,9 +291,9 @@ public class DiceManager : MonoBehaviour
             return;
         }
         
-        if (diceMeterVideoClip == null)
+        if (string.IsNullOrEmpty(diceMeterVideoUrl))
         {
-            Debug.LogWarning("[DiceManager] DiceMeter VideoClip is not assigned! Cannot play DiceMeter video.");
+            Debug.LogWarning("[DiceManager] DiceMeter Video URL is not assigned! Cannot play DiceMeter video.");
             return;
         }
         
@@ -274,6 +310,9 @@ public class DiceManager : MonoBehaviour
             Debug.Log("[DiceManager] Activated VideoPlayer GameObject for DiceMeter video.");
         }
         
+        // Ensure VideoPlayer source is set to URL
+        videoPlayer.source = VideoSource.Url;
+        
         // Switch to DiceMeter material
         if (diceMeterMaterial != null)
         {
@@ -286,12 +325,13 @@ public class DiceManager : MonoBehaviour
             Debug.Log("[DiceManager] Switched RawImage to DiceMeter material.");
         }
         
-        // Use the same VideoPlayer to play DiceMeter video
-        videoPlayer.clip = diceMeterVideoClip;
+        // Get full URL path and play the video
+        string fullUrl = GetVideoUrl(diceMeterVideoUrl);
+        videoPlayer.url = fullUrl;
         videoPlayer.isLooping = true; // Typically meter videos loop
         videoPlayer.Play();
         
-        Debug.Log("[DiceManager] Playing DiceMeter video on shared VideoPlayer.");
+        Debug.Log($"[DiceManager] Playing DiceMeter video from URL: {fullUrl}");
     }
     
     /// <summary>
