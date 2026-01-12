@@ -219,8 +219,10 @@ public class GameManager : MonoBehaviour
     {
         // Check if it's a human player's turn
         bool isHumanTurn = playerManager == null || playerManager.IsHumanPlayerTurn();
+        bool isAITurn = playerManager != null && playerManager.IsAIPlayerTurn();
         
-        // Automatically show DiceMeter when CanRollDice becomes true (no click needed)
+        // Automatically show DiceMeter when CanRollDice becomes true (only for human players)
+        // AI players will show DiceMeter through AutoRollForAI_SecondMethod to avoid conflicts
         if (isHumanTurn && CanRollDice && !isDiceMeterActive && !isRolling)
         {
             ShowDiceMeter();
@@ -292,15 +294,40 @@ public class GameManager : MonoBehaviour
         }
         
         yield return StartCoroutine(playerManager.CurrentPlayer.AIController.RollDice(() => {
-            // Simulate click: show meter, wait a bit, then roll
+            // Show DiceMeter for AI players (same as human players)
             ShowDiceMeter();
+            // Wait for the 2-second timer, then automatically roll
             StartCoroutine(DelayedRollForAI());
         }));
     }
     
     private IEnumerator DelayedRollForAI()
     {
-        // Wait for the 2-second timer to complete before allowing roll
+        // Wait for the DiceMeter video to actually start playing before starting the countdown
+        if (diceManager != null && diceManager.VideoPlayer != null)
+        {
+            VideoPlayer videoPlayer = diceManager.VideoPlayer;
+            float timeout = 3f; // Maximum wait time for video to start
+            float elapsed = 0f;
+            
+            // Wait for video to be playing
+            while (!videoPlayer.isPlaying && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            if (videoPlayer.isPlaying)
+            {
+                Debug.Log("[GameManager] DiceMeter video is now playing, starting 2-second countdown for AI");
+            }
+            else
+            {
+                Debug.LogWarning("[GameManager] DiceMeter video did not start playing within timeout, proceeding anyway");
+            }
+        }
+        
+        // Wait for the 2-second timer to complete before allowing roll (same as human players)
         yield return new WaitForSeconds(2f);
         HideDiceMeterAndRoll();
     }
@@ -310,6 +337,13 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void ShowDiceMeter()
     {
+        // Prevent showing DiceMeter if it's already active to avoid restarting the video
+        if (isDiceMeterActive)
+        {
+            Debug.Log("[GameManager] DiceMeter is already active, skipping duplicate activation");
+            return;
+        }
+        
         if (diceManager != null)
         {
             isDiceMeterActive = true;
@@ -424,8 +458,10 @@ public class GameManager : MonoBehaviour
         // Show the appropriate video (now a coroutine that waits for VideoPlayer to be prepared)
         yield return StartCoroutine(ShowDiceVideo(useOneDice, firstDiceValue, secondDiceValue));
         
-        // Wait 5 seconds for the video to play
-        yield return new WaitForSeconds(5f);
+        // Wait for the video to play (shorter wait for AI players to speed up gameplay)
+        bool isAITurn = playerManager != null && playerManager.IsAIPlayerTurn();
+        float videoWaitTime = isAITurn ? 1.5f : 5f; // Shorter wait for AI players
+        yield return new WaitForSeconds(videoWaitTime);
         
         // Hide the video
         HideDiceVideo();
@@ -573,8 +609,9 @@ public class GameManager : MonoBehaviour
             videoPlayer.Prepare();
             
             // Wait for VideoPlayer to be prepared (this ensures it's ready to play)
-            // This is especially important for AI players where timing might be tight
-            float timeout = 5f; // Maximum wait time
+            // For AI players, use shorter timeout to speed up gameplay
+            bool isAITurn = playerManager != null && playerManager.IsAIPlayerTurn();
+            float timeout = isAITurn ? 1.5f : 5f; // Shorter timeout for AI players
             float elapsed = 0f;
             while (!videoPlayer.isPrepared && elapsed < timeout)
             {

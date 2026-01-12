@@ -177,7 +177,7 @@ MonoBehaviour:
   rawImage: {fileID: 1018232904}
   diceMaterial: {fileID: 2100000, guid: 8384bad54445f15458fc9568e5a02c90, type: 2}
   diceMeterMaterial: {fileID: 2100000, guid: bf234ab3ea290dd4194fb7416cd744fc, type: 2}
-  diceMeterVideoUrl: Assets/StreamingAssets/Videos/Dice/DiceMeter.m4v
+  diceMeterVideoUrl: Assets/StreamingAssets/Videos/Dice/DiceMeter.mp4
   doubleVideoUrls:
   - Assets/StreamingAssets/Videos/Dice/double/double_no2_1+1.m4v
   - Assets/StreamingAssets/Videos/Dice/double/double_no4_2+2.m4v
@@ -2835,10 +2835,7 @@ MonoBehaviour:
   - {fileID: 3826675160268401924, guid: f5b6babad41428943ac43c755ffae857, type: 3}
   - {fileID: 5613819812675300867, guid: 5e738a5edd5942d4ea65ca4c1b432f90, type: 3}
   - {fileID: 1693284822594023523, guid: 252ae89e344ba7a45a6c5c86c5068ba7, type: 3}
-  marketWatchCards:
-  - {fileID: 6261553454309151597, guid: b5b9e45a6e6301a40bbbc6fcc222ab2f, type: 3}
-  - {fileID: 779828542664178555, guid: fe3fc321afb09d54eaf1d057de26af35, type: 3}
-  - {fileID: 1272405085965538849, guid: 833b88ab87db323499d952f867ba8eca, type: 3}
+  marketWatchCards: []
   realEstateCards:
   - {fileID: 7938976621094705061, guid: 87e2335911cf38c48a2981a7062a328c, type: 3}
   - {fileID: 4078971850190050252, guid: d8083c5016c7eae4090e5ff708f22c0e, type: 3}
