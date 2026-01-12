@@ -421,8 +421,8 @@ public class GameManager : MonoBehaviour
             shouldGrantExtraTurnForMatchingDice = false;
         }
         
-        // Show the appropriate video
-        ShowDiceVideo(useOneDice, firstDiceValue, secondDiceValue);
+        // Show the appropriate video (now a coroutine that waits for VideoPlayer to be prepared)
+        yield return StartCoroutine(ShowDiceVideo(useOneDice, firstDiceValue, secondDiceValue));
         
         // Wait 5 seconds for the video to play
         yield return new WaitForSeconds(5f);
@@ -439,23 +439,26 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// Shows the appropriate dice video based on the roll (Second Method)
     /// </summary>
-    private void ShowDiceVideo(bool useOneDice, int firstValue, int secondValue)
+    private IEnumerator ShowDiceVideo(bool useOneDice, int firstValue, int secondValue)
     {
         if (diceManager == null)
         {
             Debug.LogWarning("DiceManager is null! Cannot show dice video.");
-            return;
+            yield break;
         }
         
         VideoPlayer videoPlayer = diceManager.VideoPlayer;
         if (videoPlayer == null)
         {
             Debug.LogWarning("VideoPlayer is null! Cannot show dice video.");
-            return;
+            yield break;
         }
         
-        // First, stop and hide the video player
-        HideDiceVideo();
+        // First, stop any currently playing video but keep GameObject active for smooth transition
+        if (videoPlayer != null && videoPlayer.isPlaying)
+        {
+            videoPlayer.Stop();
+        }
         
         string targetUrl = null;
         string clipDescription = "";
@@ -474,7 +477,7 @@ public class GameManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning($"Single video URL at index {index} is null or out of range!");
-                    return;
+                    yield break;
                 }
             }
         }
@@ -547,20 +550,50 @@ public class GameManager : MonoBehaviour
             // Switch to Dice material before playing dice video
             diceManager.SwitchToDiceMaterial();
             
-            // Activate the video player GameObject
+            // Ensure VideoPlayer GameObject is active (critical for VideoPlayer to work)
             if (videoPlayer.gameObject != null)
             {
-                videoPlayer.gameObject.SetActive(true);
+                if (!videoPlayer.gameObject.activeSelf)
+                {
+                    videoPlayer.gameObject.SetActive(true);
+                    // Wait a frame after activation to ensure VideoPlayer component is ready
+                    yield return null;
+                }
             }
             
             // Ensure VideoPlayer source is set to URL
             videoPlayer.source = VideoSource.Url;
             
-            // Get full URL path and play
+            // Get full URL path and set it
             string fullUrl = GetVideoUrl(targetUrl);
             videoPlayer.url = fullUrl;
             videoPlayer.isLooping = false; // Dice videos don't loop
-            videoPlayer.Play();
+            
+            // Ensure VideoPlayer is prepared before playing
+            videoPlayer.Prepare();
+            
+            // Wait for VideoPlayer to be prepared (this ensures it's ready to play)
+            // This is especially important for AI players where timing might be tight
+            float timeout = 5f; // Maximum wait time
+            float elapsed = 0f;
+            while (!videoPlayer.isPrepared && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            if (videoPlayer.isPrepared)
+            {
+                // Now play the video
+                videoPlayer.Play();
+                Debug.Log($"[GameManager] VideoPlayer prepared and playing: {clipDescription} from URL: {fullUrl}");
+            }
+            else
+            {
+                Debug.LogWarning($"[GameManager] VideoPlayer failed to prepare within timeout. URL: {fullUrl}");
+                // Try to play anyway - sometimes it works even if not fully prepared
+                videoPlayer.Play();
+            }
             
             Debug.Log($"[GameManager] Showing dice video: {clipDescription} from URL: {fullUrl}");
         }
