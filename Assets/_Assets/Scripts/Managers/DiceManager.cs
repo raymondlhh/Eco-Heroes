@@ -267,17 +267,30 @@ public class DiceManager : MonoBehaviour
             return relativePath;
         }
         
+        // Normalize the path by removing leading/trailing slashes and backslashes
+        string normalizedPath = relativePath.TrimStart('/', '\\').TrimEnd('/', '\\');
+        
+        // Remove any leading "Assets/StreamingAssets/" or "StreamingAssets/" from the path
+        // to prevent duplicate path segments when combining with Application.streamingAssetsPath
+        if (normalizedPath.StartsWith("Assets/StreamingAssets/", System.StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedPath = normalizedPath.Substring("Assets/StreamingAssets/".Length);
+        }
+        else if (normalizedPath.StartsWith("StreamingAssets/", System.StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedPath = normalizedPath.Substring("StreamingAssets/".Length);
+        }
+        
         // If base path is specified, use it
         if (!string.IsNullOrEmpty(videoBasePath))
         {
             // Ensure proper path separator
             string basePath = videoBasePath.TrimEnd('/', '\\');
-            string videoPath = relativePath.TrimStart('/', '\\');
-            return $"{basePath}/{videoPath}";
+            return $"{basePath}/{normalizedPath}";
         }
         
         // Otherwise, use StreamingAssets path
-        return System.IO.Path.Combine(Application.streamingAssetsPath, relativePath).Replace('\\', '/');
+        return System.IO.Path.Combine(Application.streamingAssetsPath, normalizedPath).Replace('\\', '/');
     }
     
     /// <summary>
